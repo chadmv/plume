@@ -57,6 +57,13 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
 - Work lands as one commit per task and a pull request per slice; each slice ends with the user's look
   review and a retro in `docs/retros/`.
 
+## Agent team
+
+Six subagents in `.claude/agents/`: `slice-planner`, `kernel-engineer`, `pipeline-engineer`, `look-tuner`,
+`code-reviewer` and `verifier`. The main session orchestrates them; `docs/agent-orchestration.md` says who
+does what, in which order, and the rules every stage keeps. Every finished task gets the code-reviewer and
+then the verifier before it counts as done.
+
 ## Where things live
 
 - `docs/specs/`, `docs/plans/`: design and plans. `docs/retros/`: one per slice; read the newest first.
