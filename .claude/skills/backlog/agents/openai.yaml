@@ -1,0 +1,5 @@
+interface:
+  display_name: "Backlog"
+  short_description: "Generate a backlog entry"
+policy:
+  allow_implicit_invocation: false

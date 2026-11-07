@@ -1,0 +1,5 @@
+interface:
+  display_name: "Roadmap"
+  short_description: "Generate a task roadmap"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Retro"
+  short_description: "Generate a session retro"
+policy:
+  allow_implicit_invocation: false
