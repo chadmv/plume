@@ -211,7 +211,8 @@ through a ramp in the game, so the sheet stays grayscale data.
 - Godot normal map convention: https://docs.godotengine.org/en/stable/tutorials/3d/standard_material_3d.html
 - Godot image import (Detect 3D, Lossless): https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_images.html
 - GitHub Actions billing (free standard runners for public repos): https://docs.github.com/en/billing/concepts/product-billing/github-actions
-- Petri grass colors: `F:\petri\godot\project\world\meadow\meadow_style.gd` lines 111 to 112.
+- Petri grass colors: `godot/project/world/meadow/meadow_style.gd` lines 111 to 112 in the `chadmv/petri`
+  repository.
 - Papers: Stam, "Stable Fluids" (SIGGRAPH 1999); Fedkiw, Stam and Jensen, "Visual Simulation of Smoke"
   (SIGGRAPH 2001); Selle et al., "An Unconditionally Stable MacCormack Method" (J. Sci. Comput. 2008);
   Nguyen, Fedkiw and Jensen, "Physically Based Modeling and Animation of Fire" (SIGGRAPH 2002).

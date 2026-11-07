@@ -15,7 +15,9 @@ You never edit `src/` or other tests. When the tool fights you, you report it; y
 ## Inputs
 
 The dispatch names the recipe, the brief (what the effect is for, its size and timing in the game), and the
-art reference (usually under `F:\petri\docs\art-direction\reference\`). Read `CLAUDE.md`,
+art reference (usually under `docs/art-direction/reference/` in the `chadmv/petri` repository). If Petri is
+not checked out beside this repository, fetch the image with `gh api` into a temporary directory, or ask
+the orchestrator for it; never guess colors without it. Read `CLAUDE.md`,
 `docs/recipe-reference.md` and `docs/look-tuning.md` first. A game recipe lives in Petri beside the effect
 that uses it; edit one only when the dispatch names it, and never write sheets into Petri: Plume writes
 only to `--out`.
