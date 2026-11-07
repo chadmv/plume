@@ -1,6 +1,6 @@
 # Plume design
 
-Date: 2026-11-07. Status: approved by the user 2026-11-07, with amendments A1 to A3; section 11 records
+Date: 2026-11-07. Status: approved by the user 2026-11-07, with amendments A1 to A4; section 11 records
 changes made while building slice 1. Builds on the confirmed design brief
 (`2026-11-07-plume-design-brief.md`, decisions numbered D1 to D34 here); this spec states how, the brief
 states what and why. Amendments to the brief are listed in section 10 and need the user's yes.
@@ -256,6 +256,9 @@ is generated from it (D33).
   from that promise.
 - **A3 - A `[solver]` section (extends D21).** Solver controls (`pressure_iterations` now; multigrid cycle
   counts in slice 2) get their own section rather than hiding in `[time]` or `[domain]`.
+- **A4 - Selectable channel layout with a baked shade (changes the sheet contract, D14, D18).** Agreed by
+  the user 2026-11-07; the detail is `2026-11-07-shade-channel-design.md`, which amends sections 4.2, 5, 6
+  and 8 here.
 
 ## 11. Changes while building slice 1
 
