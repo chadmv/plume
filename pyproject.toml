@@ -32,3 +32,4 @@ packages = ["src/plume"]
 testpaths = ["tests"]
 addopts = "--import-mode=importlib"
 markers = ["gpu: needs a CUDA GPU; skipped when none is present"]
+pythonpath = ["tests"]
