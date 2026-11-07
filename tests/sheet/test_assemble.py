@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 
+from plume.recipe.schema import NORMAL_LAYOUT, SHADE_LAYOUT, RenderSettings
 from plume.render.camera import make_camera, make_domain_view
 from plume.render.raw_frame import CHANNELS, HEAT, NORMAL_X, NORMAL_Y, NORMAL_Z, THICKNESS
 from plume.sheet.assemble import assemble
@@ -12,6 +13,7 @@ from plume.sheet.quantize import quantize
 from plume.sheet.sheet_json import SheetInfo, sheet_json_text, source_path
 
 VIEW = make_domain_view(make_camera(0.0, 0.0), (-1.0, 0.0, -1.0), (2.0, 2.0, 2.0), 0.0625, 2.0)  # 64 px
+SOFT = RenderSettings(soften_px=0.75, crop_margin=0.04)
 
 
 def raw_disc(center, radius, heat=0.0):
@@ -29,7 +31,7 @@ def frames_rising():
 
 
 def test_crop_is_square_and_every_frame_keeps_an_empty_gutter():
-    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.2, 0.0]), 64, soften_px=0.75, margin=0.04)
+    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.2, 0.0]), 64, SOFT, NORMAL_LAYOUT)
     for frame in result.frames:
         assert frame.shape == (64, 64, 4)
         assert not frame[:2, :, :2].any() and not frame[-2:, :, :2].any()
@@ -37,13 +39,14 @@ def test_crop_is_square_and_every_frame_keeps_an_empty_gutter():
 
 
 def test_heat_is_normalized_to_the_hottest_frame():
-    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.2, 0.0]), 64, soften_px=0.75, margin=0.04)
+    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.2, 0.0]), 64, SOFT, NORMAL_LAYOUT)
     assert max(int(frame[..., 0].max()) for frame in result.frames) == 255
     assert result.frames[0][..., 0].max() > result.frames[3][..., 0].max()
 
 
 def test_frame_m_and_seat_follow_the_crop():
-    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.0, 0.0]), 64, soften_px=0.0, margin=0.0)
+    result = assemble(frames_rising(), VIEW, np.array([0.0, 0.0, 0.0]), 64,
+                      RenderSettings(soften_px=0.0, crop_margin=0.0), NORMAL_LAYOUT)
     left, top, right, bottom = result.crop.box()
     assert right - left == pytest.approx(bottom - top)
     assert result.frame_m == pytest.approx(result.crop.side * VIEW.pixel_m)
@@ -55,7 +58,7 @@ def test_frame_m_and_seat_follow_the_crop():
 def test_nothing_visible_is_an_error():
     empty = np.zeros((64, 64, CHANNELS), dtype=np.float32)
     with pytest.raises(NothingVisibleError):
-        assemble([empty], VIEW, np.zeros(3), 64, soften_px=0.75, margin=0.04)
+        assemble([empty], VIEW, np.zeros(3), 64, SOFT, NORMAL_LAYOUT)
 
 
 def test_quantize_encodes_normals_with_y_up():
@@ -66,7 +69,7 @@ def test_quantize_encodes_normals_with_y_up():
     frame[1, 0, NORMAL_X] = -1.0  # facing left
     frame[1, 1, NORMAL_Z] = 1.0
     frame[1, 1, THICKNESS] = 0.0  # empty
-    rgba = quantize(frame, heat_divisor=0.0)
+    rgba = quantize(frame, heat_divisor=0.0, channels=NORMAL_LAYOUT)
     assert tuple(rgba[0, 0, 2:]) == (128, 128)
     assert rgba[0, 1, 3] == 255
     assert rgba[1, 0, 2] == 0
@@ -82,16 +85,17 @@ def test_pack_fills_rows_left_to_right_and_leaves_unused_slots_zero():
     assert not sheet[4:, 8:].any()
 
 
-def test_json_keys_are_the_contract_in_order(tmp_path):
+@pytest.mark.parametrize("layout", [SHADE_LAYOUT, NORMAL_LAYOUT])
+def test_json_keys_are_the_contract_in_order(layout):
     info = SheetInfo(frames=64, columns=8, frame_px=256, fps=20.0, frame_m=1.23456789, seat=(0.5, 0.875),
-                     source="recipes/smoke_puff.toml", tool="plume 0.1.0",
+                     channels=layout, source="recipes/smoke_puff.toml", tool="plume 0.1.0",
                      written_by="plume run recipes/smoke_puff.toml")
     text = sheet_json_text(info)
     table = json.loads(text)
     assert list(table) == ["frames", "columns", "frame_px", "fps", "frame_m", "seat", "channels", "source",
                            "tool", "written_by"]
     assert table["frame_m"] == 1.234568
-    assert table["channels"] == "heat,thickness,normal_x,normal_y"
+    assert table["channels"] == layout
     assert text.endswith("}\n")
 
 

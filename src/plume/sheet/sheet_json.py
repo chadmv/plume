@@ -1,10 +1,9 @@
-"""The JSON written beside each sheet: the contract Petri reads, keys in a fixed order."""
+"""The JSON written beside each sheet: the contract a game reads, keys in a fixed order."""
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
-CHANNELS = "heat,thickness,normal_x,normal_y"
 DECIMALS = 6
 
 
@@ -16,6 +15,7 @@ class SheetInfo:
     fps: float
     frame_m: float
     seat: tuple[float, float]
+    channels: str  # the recipe's `output.channels`, one of the schema's layouts
     source: str
     tool: str
     written_by: str
@@ -30,7 +30,7 @@ def sheet_json_text(info: SheetInfo) -> str:
         "fps": round(info.fps, DECIMALS),
         "frame_m": round(info.frame_m, DECIMALS),
         "seat": [round(info.seat[0], DECIMALS), round(info.seat[1], DECIMALS)],
-        "channels": CHANNELS,
+        "channels": info.channels,
         "source": info.source,
         "tool": info.tool,
         "written_by": info.written_by,

@@ -100,10 +100,7 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
     image[py, px, HEAT] = heat
     image[py, px, THICKNESS] = thickness
     if look.shade_layout == 1:
-        shade = float(0.0)
-        if thickness > 0.0:
-            shade = shade_sum / thickness
-        image[py, px, SHADE] = shade
+        image[py, px, SHADE] = shade_sum  # shade times thickness (raw_frame.py)
         image[py, px, NORMAL_Y] = 0.0  # the shade layout leaves the last two slots empty
         image[py, px, NORMAL_Z] = 0.0
         return

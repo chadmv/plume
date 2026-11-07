@@ -52,8 +52,8 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
                             derived.domain_min_m, derived.size_m, recipe.domain.cell_m, recipe.render.px_per_cell)
     raw_frames, steps = _simulate_and_capture(recipe, derived, device_name, view, timer)
     with timer.stage("assemble"):
-        assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px,
-                             recipe.render.soften_px, recipe.render.crop_margin)
+        assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px, recipe.render,
+                             recipe.output.channels)
     with timer.stage("report"):
         out_dir = _out_dir(recipe, out, preview)
         files, numbers = _write_outputs(out_dir, recipe, derived, device_name, assembled,
@@ -118,8 +118,8 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
     frames = assembled.frames
     write_png(files["sheet"], pack(frames, columns))
     info = SheetInfo(frames=len(frames), columns=columns, frame_px=recipe.output.frame_px, fps=derived.fps,
-                     frame_m=assembled.frame_m, seat=assembled.seat, source=source, tool=tool_label(),
-                     written_by=command)
+                     frame_m=assembled.frame_m, seat=assembled.seat, channels=recipe.output.channels,
+                     source=source, tool=tool_label(), written_by=command)
     files["json"].write_text(sheet_json_text(info), newline="\n")
     style = sheet_look(recipe)
     backgrounds = recipe.look.backgrounds

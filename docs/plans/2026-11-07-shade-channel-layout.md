@@ -16,6 +16,14 @@ this goes straight from intake to plan; no design interview.
   - a run with no pixel at least `shade_fade_thickness` thick has no well-covered smoke to normalize by, so
     `shade_divisor` falls back to the largest shade of any pixel with thickness, and to 1 when there is
     none.
+- Found while building T3: the design keeps the plain shade in the raw frame and resamples and softens it
+  like any channel. Those filters then mix an edge pixel's shade with the 0 of the empty pixels beside it,
+  which drew the dark outline the easing step exists to prevent (a test ball's darkest edge byte fell from
+  85 to 7). The raw frame keeps shade times thickness instead, so every filter weighs a pixel's shade by
+  its smoke, as it already does the thickness, and the easing step divides it back out. The easing's
+  "where the blurred thickness is zero" becomes a smooth lean toward the frame's mean (the mean counts as
+  1/255 of thickness in every neighborhood): bicubic ringing leaves faint pixels with thickness and no
+  shade, and a hard zero test let their neighborhoods read 0.
 - Padding (resample) and empty space (ray march) are layout-specific: the normal layout's empty pixel faces
   the camera (normal z = 1); the shade layout's is all zero. `render/raw_frame.py` gets one definition of
   the empty pixel per layout.

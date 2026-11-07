@@ -22,7 +22,7 @@ def smoke_sphere(device):
 
 def half_means(image):
     covered = image[..., THICKNESS] > 0.5
-    shade = np.where(covered, image[..., SHADE], np.nan)
+    shade = np.where(covered, image[..., SHADE] / np.maximum(image[..., THICKNESS], 0.5), np.nan)
     return float(np.nanmean(shade[:, :16])), float(np.nanmean(shade[:, 16:]))
 
 
@@ -45,7 +45,7 @@ def test_a_sphere_lit_from_the_left_is_darker_on_its_right(cpu_device):
 def test_full_fill_casts_no_shadow(cpu_device):
     _, image = render(smoke_sphere(cpu_device), channels=SHADE_LAYOUT, light_dir=LEFT, shade_fill=1.0)
     covered = image[..., THICKNESS] > 0.0
-    assert np.allclose(image[covered, SHADE], 1.0, atol=1e-5)
+    assert np.allclose(image[covered, SHADE], image[covered, THICKNESS], atol=1e-5)  # shade 1 everywhere
     left, right = half_means(image)
     assert left == pytest.approx(right, abs=1e-5)
 
