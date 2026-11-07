@@ -141,7 +141,7 @@ Overrides used by --preview.
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `longest_axis_cells` | cells | `48` | Cells along the domain's longest axis in --preview. |
-| `frames` | - | `16` | Frames in --preview. |
+| `frames` | - | `16` | Frames in --preview; substeps rise so each step is as long as a full run's. |
 | `frame_px` | px | `128` | Frame size in --preview. |
 
 ## [look]

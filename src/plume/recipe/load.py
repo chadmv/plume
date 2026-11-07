@@ -31,15 +31,29 @@ def parse_recipe(table: dict) -> Recipe:
 
 
 def apply_preview(recipe: Recipe) -> Recipe:
-    """Coarsens the grid so its longest axis has `preview.longest_axis_cells` and uses preview frames."""
+    """Coarsens the grid so its longest axis has `preview.longest_axis_cells` and uses preview frames.
+
+    Fewer frames would make each step longer, so preview_substeps adds substeps to keep the step length in
+    seconds that of the full run, and a preview stays a coarse version of the final look (D30).
+    """
     preview = recipe.preview
     cell_m = max(recipe.domain.size_m) / preview.longest_axis_cells
+    substeps = preview_substeps(recipe.time.frames, recipe.time.substeps, preview.frames)
     return dataclasses.replace(
         recipe,
         domain=dataclasses.replace(recipe.domain, cell_m=cell_m),
-        time=dataclasses.replace(recipe.time, frames=preview.frames),
+        time=dataclasses.replace(recipe.time, frames=preview.frames, substeps=substeps),
         output=dataclasses.replace(recipe.output, frame_px=preview.frame_px, columns=0),
     )
+
+
+def preview_substeps(frames: int, substeps: int, preview_frames: int) -> int:
+    """Substeps per preview frame that give the full run's step length over the same duration.
+
+    The full run takes `frames * substeps` steps; the preview spreads the same count over its own frames.
+    When that does not divide evenly the count rounds up, so a preview step is never longer than a full one.
+    """
+    return max(1, math.ceil(frames * substeps / preview_frames))
 
 
 def fill_dependent_defaults(recipe: Recipe, recipe_stem: str) -> Recipe:

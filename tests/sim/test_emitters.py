@@ -53,3 +53,15 @@ def test_outward_velocity_points_away_from_the_center(cpu_device):
     u = grid.u.data.numpy()
     assert u[16, 12, 12] > 1.9  # right of center, pointing right
     assert u[8, 12, 12] < -1.9  # left of center, pointing left
+
+
+def test_partial_coverage_blend_does_not_depend_on_step_length(cpu_device):
+    # A cell on the soft edge is covered only partly; two half-length steps must blend it as far toward
+    # the emitter's temperature and velocity as one full-length step does.
+    settings = {"temperature_k": 900.0, "velocity_mps": [0.0, 2.0, 0.0], "edge_softness": 0.8}
+    one = emitted_grid(cpu_device, steps=1, dt=0.05, **settings)
+    two = emitted_grid(cpu_device, steps=2, dt=0.025, **settings)
+    edge = (12, 17, 12)  # 0.25 m above center: inside the soft edge of the 0.3 m sphere
+    assert 293.0 < one.temperature.data.numpy()[edge] < 900.0
+    np.testing.assert_allclose(two.temperature.data.numpy(), one.temperature.data.numpy(), rtol=1e-5)
+    np.testing.assert_allclose(two.v.data.numpy(), one.v.data.numpy(), rtol=1e-5, atol=1e-6)

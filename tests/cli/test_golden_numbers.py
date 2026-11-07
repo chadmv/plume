@@ -1,7 +1,8 @@
 """The smoke puff preview, rerun on CPU, matches the numbers of the approved run within tolerance.
 
-`tests/golden/smoke_puff_preview.numbers.txt` is the `numbers.txt` of the preview whose look the user
-approved at the end of slice 1 (run on CUDA). When a change is meant to alter the look, get the new look
+`tests/golden/smoke_puff_preview.numbers.txt` is the `numbers.txt` of the approved preview look. It was
+first taken on CUDA at the end of slice 1, then retaken on CPU when the preview began keeping the full
+run's step length. When a change is meant to alter the look, get the new look
 approved, then copy the new preview's `numbers.txt` over the golden file.
 """
 

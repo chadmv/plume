@@ -130,7 +130,7 @@ class OutputSettings:
 @dataclass(frozen=True, kw_only=True)
 class PreviewSettings:
     longest_axis_cells: int = setting(48, "cells", "Cells along the domain's longest axis in --preview.")
-    frames: int = setting(16, "", "Frames in --preview.")
+    frames: int = setting(16, "", "Frames in --preview; substeps rise so each step is as long as a full run's.")
     frame_px: int = setting(128, "px", "Frame size in --preview.")
 
 
