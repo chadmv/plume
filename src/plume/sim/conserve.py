@@ -1,51 +1,52 @@
-"""Keeping advection from adding or losing smoke (the T2.6 decision).
+"""Keeping clamped MacCormack from adding smoke (the T2.6 decision).
 
 Clamped MacCormack is not conservative. Measured on the smoke puff with no dissipation, smoke grew by 30
 percent over 2.4 s, and with turbulence and confinement by 68 percent on a 0.031 m grid and 109 percent on
 the 0.052 m preview grid: clamping the correction's dips at wispy edges adds smoke, more so on coarse
-grids, so a preview and its final run drifted apart. Plain semi-Lagrangian loses smoke instead (about 15
-percent on a small, sharp puff).
+grids, so a preview and its final run drifted apart.
 
-So after each smoke advection the field is scaled to the total it should have: the total before the step
-minus what flowed out through open faces (upwind smoke times outward face speed). Inflow brings in the
-outside value, 0. The scale is one number for the whole grid, so the shape MacCormack gives is kept.
+After each smoke advection the MacCormack total is held between two bounds, by scaling the whole field
+by one number (so the shape MacCormack gives is kept):
+
+- at most the total before the step, so advection never creates smoke;
+- at least the plain semi-Lagrangian total (MacCormack's first pass), which carries smoke out through open
+  faces the same way the scheme does, so smoke leaving the domain is never over-counted.
+
+A first version budgeted "before minus estimated outflow"; a review found the estimate removed far more
+than left through an open top (by frame 2 a hot puff held 0.16 below the face against 7.3 in a taller
+domain), so the bounds use only totals the scheme itself produced. Plain semi-Lagrangian still loses some
+smoke on small, sharp puffs (about 11 percent over 40 steps on the closed-box test).
 """
 
-import numpy as np
 import warp as wp
 
 from plume.sim.grid import Grid
-from plume.sim.reduce import FieldSum, outflow_kernel, scale_kernel
+from plume.sim.reduce import TripleSum
+
+
+@wp.kernel
+def scale_kernel(f: wp.array3d(dtype=float), factor: float):
+    i, j, k = wp.tid()
+    f[i, j, k] = f[i, j, k] * factor
+
+
+def held_total(before: float, semi_lagrangian: float, maccormack: float) -> float:
+    """MacCormack's total held to the scheme's own bounds (see the module docstring)."""
+    return max(semi_lagrangian, min(maccormack, before))
 
 
 class SmokeBudget:
-    """Scratch buffers for one grid's smoke budget."""
+    """Scratch for one grid's smoke totals."""
 
     def __init__(self, grid: Grid):
-        self.field_sum = FieldSum(grid.cells, grid.device)
-        nx, ny, nz = grid.cells
-        # Face planes per axis, indexed as the kernel's (axis + 1, axis + 2) cell indices.
-        self.planes = [wp.zeros((ny, nz), dtype=float, device=grid.device),
-                       wp.zeros((nz, nx), dtype=float, device=grid.device),
-                       wp.zeros((nx, ny), dtype=float, device=grid.device)]
+        self.sums = TripleSum(grid.cells, grid.device)
+        self.last_factor = 1.0
 
-    def expected_after(self, grid: Grid, dt: float) -> float:
-        """The total smoke should have after advecting the current field for `dt`, in cell volumes."""
-        smoke = grid.smoke.data
-        total = self.field_sum(smoke)
-        open_sides = ((grid.info.open_lo, 0), (grid.info.open_hi, 1))
-        for axis, field in enumerate(grid.velocity_fields()):
-            for flags, high in open_sides:
-                if flags[axis] == 1:
-                    plane = self.planes[axis]
-                    wp.launch(outflow_kernel, dim=plane.shape, device=grid.device,
-                              inputs=[smoke, field.data, axis, high, dt / grid.info.cell_m, plane])
-                    total -= float(plane.numpy().astype(np.float64).sum())
-        return max(total, 0.0)
-
-    def rescale(self, grid: Grid, target: float) -> None:
-        """Scales the freshly advected smoke (`grid.smoke.next`) to `target`."""
-        actual = self.field_sum(grid.smoke.next)
-        if actual > 0.0:
-            wp.launch(scale_kernel, dim=grid.cells, device=grid.device,
-                      inputs=[grid.smoke.next, float(target / actual)])
+    def hold(self, grid: Grid) -> None:
+        """Call after advecting smoke and before swapping: rescales `grid.smoke.next` into its bounds."""
+        smoke = grid.smoke
+        before, semi_lagrangian, maccormack = self.sums(smoke.data, smoke.hat, smoke.next)
+        target = held_total(before, semi_lagrangian, maccormack)
+        self.last_factor = target / maccormack if maccormack > 0.0 else 1.0
+        if self.last_factor != 1.0:
+            wp.launch(scale_kernel, dim=grid.cells, device=grid.device, inputs=[smoke.next, self.last_factor])

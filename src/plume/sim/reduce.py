@@ -1,7 +1,8 @@
 """Deterministic sums of grid fields.
 
-Each thread sums one row along z in a fixed order, then the host adds the rows in numpy float64. No
-atomics, and the order never changes, so the same field always gives the same total on the same device.
+Each thread sums one line along x in a fixed order (neighboring threads read neighboring memory), then
+the host adds the lines in numpy float64. No atomics, and the order never changes, so the same fields
+always give the same totals on the same device.
 """
 
 import numpy as np
@@ -9,51 +10,29 @@ import warp as wp
 
 
 @wp.kernel
-def row_sum_kernel(f: wp.array3d(dtype=float), rows: wp.array2d(dtype=float)):
-    i, j = wp.tid()
-    total = float(0.0)
-    for k in range(f.shape[2]):
-        total = total + f[i, j, k]
-    rows[i, j] = total
+def line_sums_kernel(a: wp.array3d(dtype=float), b: wp.array3d(dtype=float), c: wp.array3d(dtype=float),
+                     lines: wp.array3d(dtype=float)):
+    j, k = wp.tid()
+    total_a = float(0.0)
+    total_b = float(0.0)
+    total_c = float(0.0)
+    for i in range(a.shape[0]):
+        total_a = total_a + a[i, j, k]
+        total_b = total_b + b[i, j, k]
+        total_c = total_c + c[i, j, k]
+    lines[0, j, k] = total_a
+    lines[1, j, k] = total_b
+    lines[2, j, k] = total_c
 
 
-class FieldSum:
-    """Sums fields of one shape, reusing its row buffer."""
+class TripleSum:
+    """Totals of three same-shaped fields, with one copy to the host."""
 
     def __init__(self, shape: tuple[int, int, int], device: str):
-        self.rows = wp.zeros(shape[:2], dtype=float, device=device)
+        self.lines = wp.zeros((3, shape[1], shape[2]), dtype=float, device=device)
         self.device = device
 
-    def __call__(self, field: wp.array) -> float:
-        wp.launch(row_sum_kernel, dim=self.rows.shape, device=self.device, inputs=[field, self.rows])
-        return float(self.rows.numpy().astype(np.float64).sum())
-
-
-@wp.kernel
-def scale_kernel(f: wp.array3d(dtype=float), factor: float):
-    i, j, k = wp.tid()
-    f[i, j, k] = f[i, j, k] * factor
-
-
-@wp.kernel
-def outflow_kernel(smoke: wp.array3d(dtype=float), component: wp.array3d(dtype=float), axis: int, high: int,
-                   dt_over_cell: float, plane: wp.array2d(dtype=float)):
-    """Smoke leaving through one face of the domain in one step, per boundary cell, in cell volumes."""
-    p, q = wp.tid()
-    n = smoke.shape[axis]
-    cell = wp.vec3i(0, 0, 0)
-    face = wp.vec3i(0, 0, 0)
-    a = (axis + 1) % 3
-    b = (axis + 2) % 3
-    cell[a] = p
-    cell[b] = q
-    face[a] = p
-    face[b] = q
-    outward = float(0.0)
-    if high == 1:
-        cell[axis] = n - 1
-        face[axis] = n
-        outward = component[face[0], face[1], face[2]]
-    else:
-        outward = -component[face[0], face[1], face[2]]
-    plane[p, q] = smoke[cell[0], cell[1], cell[2]] * wp.max(outward, 0.0) * dt_over_cell
+    def __call__(self, a: wp.array, b: wp.array, c: wp.array) -> tuple[float, float, float]:
+        wp.launch(line_sums_kernel, dim=self.lines.shape[1:], device=self.device, inputs=[a, b, c, self.lines])
+        totals = self.lines.numpy().astype(np.float64).sum(axis=(1, 2))
+        return float(totals[0]), float(totals[1]), float(totals[2])

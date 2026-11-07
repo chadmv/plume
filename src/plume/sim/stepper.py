@@ -53,9 +53,8 @@ class Stepper:
 
     def _advect_scalars(self, dt: float) -> None:
         velocity = tuple(field.data for field in self.grid.velocity_fields())
-        target = self.smoke_budget.expected_after(self.grid, dt)
         advect_maccormack(self.grid.smoke, velocity, self.grid, dt)
-        self.smoke_budget.rescale(self.grid, target)
+        self.smoke_budget.hold(self.grid)
         self.grid.smoke.swap()
         advect_maccormack(self.grid.temperature, velocity, self.grid, dt)
         self.grid.temperature.swap()

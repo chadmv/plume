@@ -74,4 +74,3 @@ def _launch_trace(src: wp.array, dst: wp.array, field: AdvectedField,
     wp.launch(semi_lagrangian_kernel, dim=src.shape, device=grid.device,
               inputs=[src, dst, u, v, w, grid.info, dt_over_cell, field.offset, field.outside,
                       field.uses_outside])
-
