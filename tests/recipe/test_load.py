@@ -107,21 +107,35 @@ def test_non_finite_number_in_a_list_is_rejected(tmp_path):
 
 def test_whole_number_too_large_for_a_float_is_rejected(tmp_path):
     path = write(tmp_path, MINIMAL.replace("duration_s = 3.2", f"duration_s = {10**400}"))
-    with pytest.raises(RecipeError, match=r"time\.duration_s must be a finite number"):
+    with pytest.raises(RecipeError, match=r"time\.duration_s must be a finite number, got inf$"):
         load_recipe(path)
 
 
-@pytest.mark.parametrize("center", ["[1.01, 0.3, 0.0]", "[-1.01, 0.3, 0.0]", "[0.0, -0.1, 0.0]",
-                                    "[0.0, 3.1, 0.0]", "[0.0, 0.3, 1.5]"])
-def test_emitter_centered_outside_the_domain_is_rejected(tmp_path, center):
+@pytest.mark.parametrize("center", ["[1.3, 0.3, 0.0]", "[-1.3, 0.3, 0.0]", "[0.0, -0.3, 0.0]",
+                                    "[0.0, 3.3, 0.0]", "[0.0, 0.3, 1.3]"])
+def test_emitter_wholly_outside_the_domain_is_rejected(tmp_path, center):
     path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", f"center_m = {center}"))
-    with pytest.raises(RecipeError, match=r"emitter\[0\]\.center_m \([xyz]\) must be inside the domain"):
+    with pytest.raises(RecipeError, match=r"emitter\[0\] lies outside the domain on [xyz]"):
         load_recipe(path)
 
 
-def test_emitter_centered_on_the_domain_faces_is_accepted(tmp_path):
-    path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", "center_m = [1.0, 0.0, -1.0]"))
-    assert load_recipe(path).emitter[0].center_m == (1.0, 0.0, -1.0)
+def test_box_emitter_wholly_outside_the_domain_is_rejected(tmp_path):
+    text = MINIMAL.replace("center_m = [0.0, 0.3, 0.0]\nradius_m = 0.25",
+                           'shape = "box"\ncenter_m = [0.0, -0.3, 0.0]\nsize_m = [0.5, 0.5, 0.5]')
+    with pytest.raises(RecipeError, match=r"emitter\[0\] lies outside the domain on y"):
+        load_recipe(write(tmp_path, text))
+
+
+@pytest.mark.parametrize("center", ["[0.0, -0.1, 0.0]", "[1.2, 0.3, -1.2]", "[0.0, -0.25, 0.0]"])
+def test_emitter_centered_outside_but_reaching_in_is_accepted(tmp_path, center):
+    path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", f"center_m = {center}"))
+    assert load_recipe(path).emitter[0].radius_m == 0.25
+
+
+def test_duration_too_small_for_its_frames_is_rejected(tmp_path):
+    path = write(tmp_path, MINIMAL.replace("duration_s = 3.2", "duration_s = 1e-320"))
+    with pytest.raises(RecipeError, match=r"time\.duration_s is too small"):
+        load_recipe(path)
 
 
 @pytest.mark.parametrize("seed", [-1, 2**31, 5_000_000_000])

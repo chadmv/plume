@@ -27,7 +27,7 @@ they run on the CPU, which is fine for `--preview` and slow for full sheets.
 |------|---------|
 | 0 | done |
 | 1 | the run failed (no CUDA device, no frame shows any smoke, the sheet does not fit) |
-| 2 | recipe error: a bad key, type or value, found by `plume check` before any simulation |
+| 2 | recipe error: a bad key, type or value, found by `plume check` before any simulation; a run that needs more than `solver.max_substeps` steps a frame also stops with 2 |
 | 64 | usage error: an unknown flag or command, or a missing argument |
 
 ## The sheet

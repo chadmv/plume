@@ -1,5 +1,6 @@
 """Value rules a well-typed recipe must still meet: positive sizes, ordered times, known names."""
 
+import math
 import re
 
 from plume.recipe.errors import RecipeError
@@ -41,6 +42,8 @@ def _check_domain(recipe: Recipe) -> None:
 def _check_time(recipe: Recipe) -> None:
     time = recipe.time
     _positive("time.duration_s", time.duration_s)
+    if not math.isfinite(time.frames * time.substeps / time.duration_s):
+        raise RecipeError(f"time.duration_s is too small for {time.frames} frames, got {time.duration_s}")
     _at_least("time.frames", time.frames, 1)
     _at_least("time.substeps", time.substeps, 1)
     _at_least("time.warmup_s", time.warmup_s, 0.0)
@@ -61,12 +64,12 @@ def _check_emitters(recipe: Recipe) -> None:
         if emitter.name in names:
             raise RecipeError(f"{where}.name {emitter.name!r} is used twice")
         names.add(emitter.name)
-        _check_center_inside(recipe, where, emitter.center_m)
         if emitter.shape == "sphere":
             _positive(f"{where}.radius_m", emitter.radius_m)
         else:
             for axis, size in zip("xyz", emitter.size_m):
                 _positive(f"{where}.size_m ({axis})", size)
+        _check_reaches_domain(recipe, where, emitter)
         _between(f"{where}.edge_softness", emitter.edge_softness, 0.0, 1.0)
         if emitter.end_s <= emitter.start_s:
             raise RecipeError(f"{where}.end_s must be after start_s")
@@ -77,17 +80,20 @@ def _check_emitters(recipe: Recipe) -> None:
         _at_least(f"{where}.noise.strength", emitter.noise.strength, 0.0)
 
 
-def _check_center_inside(recipe: Recipe, where: str, center_m: tuple[float, float, float]) -> None:
-    """An emitter's center must be inside the domain (faces included); outside it emits nothing.
+def _check_reaches_domain(recipe: Recipe, where: str, emitter) -> None:
+    """An emitter's shape must reach into the domain (faces included); one wholly outside emits nothing.
 
-    The domain spans -size/2..size/2 on x and z and 0..size on y, matching `derive`'s `domain_min_m`.
+    The center may sit outside, as a ground source half sunk below the floor does. The check uses the
+    requested `domain.size_m`, spanning -size/2..size/2 on x and z and 0..size on y; the grid rounds that
+    size to whole cells, so a shape that only grazes a face can still miss every cell.
     """
     size = recipe.domain.size_m
     ranges = ((-size[0] / 2, size[0] / 2), (0.0, size[1]), (-size[2] / 2, size[2] / 2))
-    for axis, value, (low, high) in zip("xyz", center_m, ranges):
-        if not low <= value <= high:
-            raise RecipeError(f"{where}.center_m ({axis}) must be inside the domain, between {low:g} and "
-                              f"{high:g} m, got {value:g}")
+    reaches = (emitter.radius_m,) * 3 if emitter.shape == "sphere" else tuple(s / 2 for s in emitter.size_m)
+    for axis, center, reach, (low, high) in zip("xyz", emitter.center_m, reaches, ranges):
+        if center - reach > high or center + reach < low:
+            raise RecipeError(f"{where} lies outside the domain on {axis}: its center {center:g} m reaches "
+                              f"{reach:g} m, and the domain spans {low:g} to {high:g} m")
 
 
 def _check_forces(recipe: Recipe) -> None:

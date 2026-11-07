@@ -73,7 +73,7 @@ def _number(value: Any, key_path: str) -> float:
         number = math.inf
     # nan and inf slip past every range rule (comparisons with nan are False) and fail deep in a run.
     if not math.isfinite(number):
-        raise RecipeError(f"{key_path} must be a finite number, got {value}")
+        raise RecipeError(f"{key_path} must be a finite number, got {number}")
     return number
 
 
