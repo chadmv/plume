@@ -81,7 +81,8 @@ the reviewer re-checks just those IDs. Medium and Low: fix now if cheap, otherwi
 verifier's output. A task is done when the reviewer approves and the verifier passes.
 
 **6. Look.** Every slice ends with its example recipe's look review. Dispatch `look-tuner` with the recipe,
-the brief and the art reference. Send the user the package's contact sheets and channel strip
+the brief and, when the effect has one, the art reference from whoever asked for it (Plume keeps none of
+its own). Send the user the package's contact sheets and channel strip
 (`SendUserFile`) with the summary. The user rules; commit the recipe with the verdict. On approval,
 dispatch `look-tuner` to refresh the golden file, then `verifier` so the golden test passes on the new
 numbers. Tool friction from the package becomes backlog items.
