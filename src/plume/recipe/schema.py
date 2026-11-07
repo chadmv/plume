@@ -142,12 +142,12 @@ class BackgroundSettings:
 
 @dataclass(frozen=True, kw_only=True)
 class LookSettings:
-    ambient: float = setting(0.55, "", "Light every smoke surface gets, 0 to 1.")
+    ambient: float = setting(0.65, "", "Light every smoke surface gets, 0 to 1.")
     sun_dir: Vec3 = setting((-0.5, 0.7, 0.5), "", "Direction toward the sun in camera space (x right, y up, "
                                                   "z toward the camera).")
     smoke_ramp: tuple[ColorStop, ...] = setting(
-        ((0.0, "#8f8174"), (0.4, "#a07f62"), (0.75, "#d58a4c"), (1.0, "#f4aa5e")), "",
-        "Smoke color by heat, as [position, sRGB] stops.")
+        ((0.0, "#aea193"), (0.4, "#bc9c84"), (0.75, "#dca07a"), (1.0, "#f5b47e")), "",
+        "Smoke color by heat, as [position, sRGB] stops (cool end from the reference's sunlit smoke).")
     emission_ramp: tuple[ColorStop, ...] = setting(
         ((0.0, "#000000"), (0.2, "#3a0c04"), (0.5, "#c4441a"), (0.8, "#ff9a3a"), (1.0, "#fff2c2")), "",
         "Glow color added by heat, as [position, sRGB] stops.")
