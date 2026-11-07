@@ -1,13 +1,15 @@
 """Trilinear sampling of grid fields at continuous positions (cell units, 0 at the domain's corner)."""
 
+from typing import Any
+
 import warp as wp
 
 from plume.sim.grid import GridInfo
 
 
 @wp.func
-def sample_index_space(f: wp.array3d(dtype=float), g: wp.vec3) -> float:
-    """Trilinear sample at continuous index `g`, clamped to the array's extent."""
+def sample_index_space(f: wp.array3d(dtype=Any), g: wp.vec3):
+    """Trilinear sample at continuous index `g`, clamped to the array's extent (scalar or vector)."""
     x = wp.clamp(g[0], 0.0, float(f.shape[0] - 1))
     y = wp.clamp(g[1], 0.0, float(f.shape[1] - 1))
     z = wp.clamp(g[2], 0.0, float(f.shape[2] - 1))
