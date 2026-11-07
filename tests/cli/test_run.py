@@ -3,30 +3,8 @@ import shutil
 
 from plume.cli.main import EXIT_OK, main
 from plume.report.numbers import read_numbers
+from support.tiny import TINY
 
-TINY = """
-seed = 3
-
-[domain]
-size_m = [1.0, 1.5, 1.0]
-cell_m = 0.0625
-
-[time]
-duration_s = 1.0
-frames = 4
-
-[[emitter]]
-name = "puff"
-center_m = [0.0, 0.3, 0.0]
-radius_m = 0.2
-end_s = 0.3
-smoke_per_s = 6.0
-temperature_k = 500.0
-noise = { scale_m = 0.1, strength = 0.5 }
-
-[output]
-frame_px = 64
-"""
 
 OUTPUTS = ("tiny.png", "tiny.json", "contact_neutral.png", "contact_grass.png", "channels.png", "numbers.txt",
            "settings.toml", "timing.txt")
