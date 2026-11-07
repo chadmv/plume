@@ -1,6 +1,7 @@
 # Plume design
 
-Date: 2026-11-07. Status: draft for the user's review. Builds on the confirmed design brief
+Date: 2026-11-07. Status: approved by the user 2026-11-07, with amendments A1 to A3; section 11 records
+changes made while building slice 1. Builds on the confirmed design brief
 (`2026-11-07-plume-design-brief.md`, decisions numbered D1 to D34 here); this spec states how, the brief
 states what and why. Amendments to the brief are listed in section 10 and need the user's yes.
 
@@ -28,7 +29,8 @@ One run is four steps, each producing what the next needs:
 
 ### 3.1 Grid and units
 
-- Axes: x right, y up, z toward the default camera. Meters, seconds, Kelvin throughout.
+- Axes: x right, y up, z toward the default camera. Meters, seconds, Kelvin throughout. The origin is the
+  center of the domain's floor.
 - Cell counts per axis are `round(size_m / cell_m)`; the actual size (counts times `cell_m`) is logged.
 - A MAC (staggered) grid: velocity components on cell faces, scalars (smoke, temperature, and from slice 3
   fuel and flame) at cell centers. Staggering keeps the pressure projection free of checkerboard modes.
@@ -53,8 +55,9 @@ substeps (D10).
 6. **Dissipate.** Smoke decays by `exp(-smoke_per_s * dt)`; temperature relaxes toward ambient by
    `exp(-cooling_per_s * dt)`.
 
-`warmup_s` runs these steps before frame 0 (D10). Frame `i` is captured at effect time `i / fps` after
-warmup.
+`warmup_s` runs these steps before frame 0 (D10). The simulation clock starts at 0 when warmup begins and
+emitter times are on that clock. Frame `i` is captured after `warmup_s + (i + 1) / fps` of simulated time,
+so the last frame lands at the end of the duration and the first already shows the effect starting.
 
 ### 3.3 Emitters
 
@@ -94,7 +97,7 @@ with smoke `s` and temperature `T`:
   `1 - alpha`.
 - Heat: `heat += glow(T) * step_m * tr ^ smoke_hides_heat`, where `glow(T) = max(0, T - glow_start_k)`
   (slice 3 adds the flame field to this, weighted by `[combustion]` values).
-- Normal: `n_sum += tr * alpha * (-grad)`, where `grad` is the gradient of the smoke field after a Gaussian
+- Normal: `n_sum += tr * alpha * normalize(-grad)`, where `grad` is the gradient of the smoke field after a Gaussian
   blur of `normal_blur_cells` (computed once per frame, central differences, trilinear sampled).
 
 Per pixel the raw outputs are `heat` (physical units, K m), `thickness = 1 - tr` (D12), and the normal:
@@ -207,15 +210,17 @@ Names carry units (D20); unknown keys are errors. Defaults in brackets.
 - `[time]`: `duration_s` (required), `frames` [64], `substeps` [3], `warmup_s` [0]
 - `[[emitter]]`: `name` (required), `shape` ["sphere"], `center_m` (required), `radius_m` (sphere),
   `size_m` (box), `edge_softness` [0.3], `start_s` [0], `end_s` (required), `smoke_per_s` [0],
-  `temperature_k` [ambient], `velocity_mps` [0, 0, 0], `velocity_mode` ["fixed"], `noise` table:
+  `temperature_k` [-1, meaning ambient], `velocity_mps` [0, 0, 0], `velocity_mode` ["fixed"], `noise` table:
   `scale_m` [0.1], `strength` [0]
 - `[forces]`: `gravity_mps2` [9.81], `heat_buoyancy` [1], `smoke_weight` [0]
 - `[dissipation]`: `smoke_per_s` [0], `cooling_per_s` [0]
 - `[solver]`: `pressure_iterations` [60]
-- `[camera]`: `elevation_deg` [0], `azimuth_deg` [0], `seat` [first emitter's name, or `[x, y, z]` meters]
+- `[camera]`: `elevation_deg` [0], `azimuth_deg` [0], `seat` [first emitter's name] (a point in meters
+  arrives when an effect needs one)
 - `[render]`: `px_per_cell` [2], `opacity_per_density` [4], `glow_start_k` [600], `smoke_hides_heat` [1],
   `normal_blur_cells` [1.5], `normal_fade_thickness` [0.1], `soften_px` [0.75], `crop_margin` [0.04]
-- `[output]`: `name` [recipe file stem], `frame_px` [256], `columns` [auto]
+- `[output]`: `name` [recipe file stem; a plain file name, no paths], `frame_px` [256], `columns` [0, meaning
+  the smallest square grid]
 - `[preview]`: `longest_axis_cells` [48], `frames` [16], `frame_px` [128]
 - `[look]`: `ambient`, `sun_dir`, `smoke_ramp`, `emission_ramp`, `contact_px` [128], `backgrounds`
 
@@ -237,7 +242,8 @@ is generated from it (D33).
 - **A1 - Keep 2D frame images, not volumes (changes D16's internals).** The brief said the run keeps each
   frame's volume, then renders at the final crop. At close-up size (256 x 384 x 256 cells, 64 frames, two
   fields) that is about 6 GB even at half precision. Instead each frame is rendered once over the whole
-  domain view at 2 px per cell and only those images are kept (about 100 MB), then cropped and resampled.
+  domain view at 2 px per cell and only those images are kept (about 85 MB at the default size, 500 MB at
+  close-up size, as 32-bit floats), then cropped and resampled.
   No detail is lost: the volume has none finer than half a cell. The crop rule, gutter and margin are
   unchanged.
 - **A2 - Run time moves out of `numbers.txt` (changes D19).** A wall-clock time inside `numbers.txt` would
@@ -246,7 +252,19 @@ is generated from it (D33).
 - **A3 - A `[solver]` section (extends D21).** Solver controls (`pressure_iterations` now; multigrid cycle
   counts in slice 2) get their own section rather than hiding in `[time]` or `[domain]`.
 
-## 11. Risks
+## 11. Changes while building slice 1
+
+- Frame times are `(i + 1) / fps` after warmup (3.2), not `i / fps`, so frame 0 is never empty.
+- Normals average unit surface directions (4.2), so sharp and soft edges weigh alike.
+- `seat` names an emitter only (8); `output.name` must be a plain file name (a security review found that
+  `../` in it could write outside the output folder).
+- Advection loses some smoke: a small, sharp puff loses about 10 percent over 40 steps (plain
+  semi-Lagrangian about 7). The projection leaves almost no divergence, so this is the scheme, not a leak.
+- Measured on the 2080 Ti: the smoke puff preview takes about 5 s warm and the full sheet (80 x 100 x 80
+  cells, 64 frames at 256 px) about 15 s; the CPU preview takes about 13 s on Windows. The first run on a
+  device adds about 20 s of kernel compiling.
+
+## 12. Risks
 
 - **Warp on CPU is slow.** Measured on this PC (Warp 1.19.0): a simple 128-cubed pass takes 12.8 ms on CPU
   against 0.06 ms on the 2080 Ti. The CPU path is for previews (48 cells on the long axis, about 14 times

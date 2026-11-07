@@ -1,6 +1,6 @@
 # Plume build plan
 
-Date: 2026-11-07. Status: draft for the user's review. Builds the spec
+Date: 2026-11-07. Status: approved by the user 2026-11-07. Builds the spec
 (`docs/specs/2026-11-07-plume-design.md`) in six slices (D34). Slice 1 is planned task by task; later slices
 are outlined and get their own task plans when they start.
 
@@ -132,7 +132,7 @@ Done when the spec's slice 1 success criteria (section 9) hold.
 
 - A `gpu` test: the tiny recipe on CPU and CUDA agrees within tolerance (thickness bytes within 3, normals
   within 6, `numbers.txt` values within 2 percent).
-- Run the preview in WSL Ubuntu on CPU.
+- Run the preview on Linux CPU. (As built: GitHub Actions on Ubuntu, since WSL here has no uv.)
 - `.github/workflows/ci.yml`: Ubuntu, uv, `pytest -m "not gpu"`.
 
 ### T1.14 - Docs and close
