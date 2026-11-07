@@ -3,7 +3,7 @@
 import re
 
 from plume.recipe.errors import RecipeError
-from plume.recipe.schema import ColorStop, Recipe
+from plume.recipe.schema import SEED_MAX, ColorStop, Recipe
 
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 PLAIN_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*$")
@@ -19,6 +19,7 @@ def check_output_name(name: str) -> None:
 
 def check_rules(recipe: Recipe) -> None:
     """Raises RecipeError for the first rule the recipe breaks."""
+    _between("seed", recipe.seed, 0, SEED_MAX)
     _check_domain(recipe)
     _check_time(recipe)
     _check_emitters(recipe)
@@ -60,6 +61,7 @@ def _check_emitters(recipe: Recipe) -> None:
         if emitter.name in names:
             raise RecipeError(f"{where}.name {emitter.name!r} is used twice")
         names.add(emitter.name)
+        _check_center_inside(recipe, where, emitter.center_m)
         if emitter.shape == "sphere":
             _positive(f"{where}.radius_m", emitter.radius_m)
         else:
@@ -73,6 +75,19 @@ def _check_emitters(recipe: Recipe) -> None:
             _positive(f"{where}.temperature_k", emitter.temperature_k)
         _positive(f"{where}.noise.scale_m", emitter.noise.scale_m)
         _at_least(f"{where}.noise.strength", emitter.noise.strength, 0.0)
+
+
+def _check_center_inside(recipe: Recipe, where: str, center_m: tuple[float, float, float]) -> None:
+    """An emitter's center must be inside the domain (faces included); outside it emits nothing.
+
+    The domain spans -size/2..size/2 on x and z and 0..size on y, matching `derive`'s `domain_min_m`.
+    """
+    size = recipe.domain.size_m
+    ranges = ((-size[0] / 2, size[0] / 2), (0.0, size[1]), (-size[2] / 2, size[2] / 2))
+    for axis, value, (low, high) in zip("xyz", center_m, ranges):
+        if not low <= value <= high:
+            raise RecipeError(f"{where}.center_m ({axis}) must be inside the domain, between {low:g} and "
+                              f"{high:g} m, got {value:g}")
 
 
 def _check_forces(recipe: Recipe) -> None:

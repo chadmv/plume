@@ -2,6 +2,7 @@
 
 import dataclasses
 import difflib
+import math
 import typing
 from typing import Any
 
@@ -66,7 +67,14 @@ def _sequence(value: Any, args: tuple, key_path: str, field: dataclasses.Field) 
 def _number(value: Any, key_path: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise RecipeError(f"{key_path} must be a number, got {_describe(value)}")
-    return float(value)
+    try:
+        number = float(value)
+    except OverflowError:
+        number = math.inf
+    # nan and inf slip past every range rule (comparisons with nan are False) and fail deep in a run.
+    if not math.isfinite(number):
+        raise RecipeError(f"{key_path} must be a finite number, got {value}")
+    return number
 
 
 def _whole_number(value: Any, key_path: str) -> int:

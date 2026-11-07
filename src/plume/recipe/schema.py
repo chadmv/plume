@@ -14,6 +14,8 @@ ColorStop = tuple[float, str]
 
 REQUIRED = dataclasses.MISSING
 FACE_KINDS = ("closed", "open")
+# The noise kernels take the seed as a signed 32-bit integer, so a larger seed would wrap onto a smaller one.
+SEED_MAX = 2**31 - 1
 
 
 def setting(default: Any, unit: str, doc: str, choices: tuple[str, ...] = ()) -> Any:
@@ -188,7 +190,7 @@ class Recipe:
     extends: str = setting("", "", "Parent recipe this one builds on, as a path relative to this file. Tables "
                                    "merge key by key; any other value, `[[emitter]]` included, replaces the "
                                    "parent's. Empty in a resolved recipe.")
-    seed: int = setting(0, "", "Seed for every random choice in the run.")
+    seed: int = setting(0, "", f"Seed for every random choice in the run, from 0 to {SEED_MAX}.")
     domain: DomainSettings = section("The simulation box.")
     time: TimeSettings = section("Effect time and frames.")
     emitter: tuple[EmitterSettings, ...] = setting(REQUIRED, "", "Sources of smoke, heat and motion.")

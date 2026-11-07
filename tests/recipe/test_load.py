@@ -92,6 +92,49 @@ def test_output_name_must_be_a_plain_name(tmp_path, name):
         load_recipe(write(tmp_path, text))
 
 
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_non_finite_numbers_are_rejected(tmp_path, value):
+    path = write(tmp_path, MINIMAL.replace("duration_s = 3.2", f"duration_s = {value}"))
+    with pytest.raises(RecipeError, match=r"time\.duration_s must be a finite number"):
+        load_recipe(path)
+
+
+def test_non_finite_number_in_a_list_is_rejected(tmp_path):
+    path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", "center_m = [0.0, nan, 0.0]"))
+    with pytest.raises(RecipeError, match=r"emitter\[0\]\.center_m\[1\] must be a finite number"):
+        load_recipe(path)
+
+
+def test_whole_number_too_large_for_a_float_is_rejected(tmp_path):
+    path = write(tmp_path, MINIMAL.replace("duration_s = 3.2", f"duration_s = {10**400}"))
+    with pytest.raises(RecipeError, match=r"time\.duration_s must be a finite number"):
+        load_recipe(path)
+
+
+@pytest.mark.parametrize("center", ["[1.01, 0.3, 0.0]", "[-1.01, 0.3, 0.0]", "[0.0, -0.1, 0.0]",
+                                    "[0.0, 3.1, 0.0]", "[0.0, 0.3, 1.5]"])
+def test_emitter_centered_outside_the_domain_is_rejected(tmp_path, center):
+    path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", f"center_m = {center}"))
+    with pytest.raises(RecipeError, match=r"emitter\[0\]\.center_m \([xyz]\) must be inside the domain"):
+        load_recipe(path)
+
+
+def test_emitter_centered_on_the_domain_faces_is_accepted(tmp_path):
+    path = write(tmp_path, MINIMAL.replace("center_m = [0.0, 0.3, 0.0]", "center_m = [1.0, 0.0, -1.0]"))
+    assert load_recipe(path).emitter[0].center_m == (1.0, 0.0, -1.0)
+
+
+@pytest.mark.parametrize("seed", [-1, 2**31, 5_000_000_000])
+def test_seed_outside_32_bit_range_is_rejected(tmp_path, seed):
+    path = write(tmp_path, f"seed = {seed}\n" + MINIMAL)
+    with pytest.raises(RecipeError, match=r"seed must be between 0 and 2147483647"):
+        load_recipe(path)
+
+
+def test_largest_seed_is_accepted(tmp_path):
+    assert load_recipe(write(tmp_path, f"seed = {2**31 - 1}\n" + MINIMAL)).seed == 2**31 - 1
+
+
 def test_preview_coarsens_the_longest_axis_to_48_cells(tmp_path):
     recipe = load_recipe(write(tmp_path, MINIMAL), preview=True)
     derived = derive(recipe)

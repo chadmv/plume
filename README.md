@@ -21,6 +21,15 @@ uv run plume run recipes/smoke_puff.toml
 On a machine with an NVIDIA GPU (Turing or newer, driver R580 or newer) kernels run on CUDA; elsewhere
 they run on the CPU, which is fine for `--preview` and slow for full sheets.
 
+`plume` exits with one of four codes, so a script or an agent can tell a bad recipe from a crash:
+
+| Code | Meaning |
+|------|---------|
+| 0 | done |
+| 1 | the run failed (no CUDA device, no frame shows any smoke, the sheet does not fit) |
+| 2 | recipe error: a bad key, type or value, found by `plume check` before any simulation |
+| 64 | usage error: an unknown flag or command, or a missing argument |
+
 ## The sheet
 
 One RGBA PNG per flipbook, frames in rows, left to right and top to bottom. 8-bit linear:
