@@ -122,7 +122,7 @@ whole suite; that is the verifier's gate.
 
 ## Severity
 
-- Critical: wrong output bytes, a broken determinism promise, a contract break Petri would import, data
+- Critical: wrong output bytes, a broken determinism promise, a contract break a game would import, data
   written outside the output folder.
 - High: a likely bug, a test that cannot fail, a golden file changed without approval, a budget blown.
 - Medium: a real defect with limited reach, or off the hot path.
