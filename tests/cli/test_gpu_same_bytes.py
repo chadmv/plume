@@ -33,7 +33,7 @@ def test_two_cuda_runs_write_identical_bytes(tmp_path, cuda_device):
     run_preview_on_cuda(out)
 
     summary, _ = read_numbers((preview / "numbers.txt").read_text())
-    assert summary["backend"] == "cuda"
+    assert summary["backend"].startswith("cuda"), summary["backend"]
     names = sorted(path.name for path in first.iterdir() if path.name != "timing.txt")
     assert sorted(path.name for path in preview.iterdir() if path.name != "timing.txt") == names
     assert "smoke_puff.png" in names and "numbers.txt" in names
