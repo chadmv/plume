@@ -82,6 +82,9 @@ Forces on the gas.
 | `gravity_mps2` | m/s^2 | `9.81` | Strength of gravity. |
 | `heat_buoyancy` | - | `1.0` | Lift from heat; 1 is ideal-gas buoyancy. |
 | `smoke_weight` | - | `0.0` | Sink from smoke density, as a fraction of gravity per unit density. |
+| `wind_mps` | m/s | `[0.0, 0.0, 0.0]` | Velocity of the surrounding air; drag pulls the gas toward it, so it needs `drag_per_s`. |
+| `drag_per_s` | 1/s | `0.0` | Rate the gas's velocity relaxes toward `wind_mps`; 0 for none. |
+| `vorticity_confinement` | 1/s | `0.0` | Strength of the push that keeps small swirls alive (Fedkiw 2001), scaled by the cell size so previews keep their swirl; 0 for none. |
 
 ## [dissipation]
 

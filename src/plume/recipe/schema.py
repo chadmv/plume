@@ -87,6 +87,12 @@ class ForceSettings:
     heat_buoyancy: float = setting(1.0, "", "Lift from heat; 1 is ideal-gas buoyancy.")
     smoke_weight: float = setting(0.0, "", "Sink from smoke density, as a fraction of gravity per unit "
                                            "density.")
+    wind_mps: Vec3 = setting((0.0, 0.0, 0.0), "m/s", "Velocity of the surrounding air; drag pulls the gas "
+                                                     "toward it, so it needs `drag_per_s`.")
+    drag_per_s: float = setting(0.0, "1/s", "Rate the gas's velocity relaxes toward `wind_mps`; 0 for none.")
+    vorticity_confinement: float = setting(0.0, "1/s", "Strength of the push that keeps small swirls alive "
+                                                       "(Fedkiw 2001), scaled by the cell size so previews "
+                                                       "keep their swirl; 0 for none.")
 
 
 @dataclass(frozen=True, kw_only=True)

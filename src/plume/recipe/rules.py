@@ -22,6 +22,7 @@ def check_rules(recipe: Recipe) -> None:
     _check_domain(recipe)
     _check_time(recipe)
     _check_emitters(recipe)
+    _check_forces(recipe)
     _check_camera(recipe)
     _check_render(recipe)
     _check_output(recipe)
@@ -70,6 +71,15 @@ def _check_emitters(recipe: Recipe) -> None:
             _positive(f"{where}.temperature_k", emitter.temperature_k)
         _positive(f"{where}.noise.scale_m", emitter.noise.scale_m)
         _at_least(f"{where}.noise.strength", emitter.noise.strength, 0.0)
+
+
+def _check_forces(recipe: Recipe) -> None:
+    forces = recipe.forces
+    _at_least("forces.drag_per_s", forces.drag_per_s, 0.0)
+    _at_least("forces.vorticity_confinement", forces.vorticity_confinement, 0.0)
+    if any(forces.wind_mps) and forces.drag_per_s == 0.0:
+        raise RecipeError("forces.wind_mps needs forces.drag_per_s above 0: drag is what pulls the gas "
+                          "toward the wind")
 
 
 def _check_camera(recipe: Recipe) -> None:

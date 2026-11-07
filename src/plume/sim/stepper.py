@@ -5,10 +5,11 @@ from plume.recipe.schema import Recipe
 from plume.sim.advect import advect_maccormack
 from plume.sim.dissipate import dissipate
 from plume.sim.emitters import emit, emitter_params
-from plume.sim.forces import apply_buoyancy
+from plume.sim.forces import apply_buoyancy, apply_drag
 from plume.sim.grid import Grid
 from plume.sim.pressure import project
 from plume.sim.pressure_solver import make_pressure_solve
+from plume.sim.vorticity import VorticityConfinement
 
 
 class Stepper:
@@ -20,6 +21,7 @@ class Stepper:
         self.dt = dt
         self.emitters = emitter_params(recipe.emitter, grid.device)
         self.pressure_solve = make_pressure_solve(grid, recipe.solver)
+        self.confinement = VorticityConfinement(grid) if recipe.forces.vorticity_confinement > 0 else None
 
     def step(self, time_s: float) -> None:
         """Advances from `time_s` to `time_s + dt`."""
@@ -28,6 +30,9 @@ class Stepper:
         emit(grid, self.emitters, recipe.seed, time_s, dt)
         forces = recipe.forces
         apply_buoyancy(grid, forces.gravity_mps2, forces.heat_buoyancy, forces.smoke_weight, ambient, dt)
+        if self.confinement is not None:
+            self.confinement.apply(grid, forces.vorticity_confinement, dt)
+        apply_drag(grid, forces.wind_mps, forces.drag_per_s, dt)
         self._advect_velocity()
         project(grid, self.pressure_solve)
         self._advect_scalars()
