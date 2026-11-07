@@ -15,6 +15,14 @@ ColorStop = tuple[float, str]
 REQUIRED = dataclasses.MISSING
 FACE_KINDS = ("closed", "open")
 
+# The sheet's channel layouts, R, G, B, A. Each string is both the recipe value and the JSON's `channels`.
+SHADE_LAYOUT = "heat,thickness,shade,unused"
+NORMAL_LAYOUT = "heat,thickness,normal_x,normal_y"
+CHANNEL_LAYOUTS = (SHADE_LAYOUT, NORMAL_LAYOUT)
+
+# Keys that moved to another table: an old recipe that sets one is told where it went.
+MOVED_KEYS = {"look.sun_dir": "render.light_dir"}
+
 
 def setting(default: Any, unit: str, doc: str, choices: tuple[str, ...] = ()) -> Any:
     """Declares one recipe key. Pass `REQUIRED` as the default for a key the recipe must give."""
@@ -144,6 +152,15 @@ class RenderSettings:
     smoke_hides_heat: float = setting(1.0, "", "How much smoke in front hides glow behind it, 0 to 1.")
     normal_blur_cells: float = setting(1.5, "cells", "Blur applied to smoke before taking surface normals.")
     normal_fade_thickness: float = setting(0.1, "", "Below this thickness, normals fade to face the camera.")
+    light_dir: Vec3 = setting((-0.5, 0.7, 0.5), "", "Direction toward the key light in camera space (x right, "
+                                                    "y up, z toward the camera). Bakes the shade and lights "
+                                                    "the normal layout's contact sheets.")
+    shade_fill: float = setting(0.25, "", "Share of light every bit of smoke gets whatever shadows it (sky and "
+                                          "bounce), 0 to 1. Shade layout only.")
+    shade_fade_thickness: float = setting(0.1, "", "Below this thickness, shade eases into its neighborhood's "
+                                                   "value. Shade layout only.")
+    shade_neighborhood_px: float = setting(4.0, "px", "Gaussian sigma, in frame pixels, of the neighborhood a "
+                                                      "thin pixel takes its shade from. Shade layout only.")
     soften_px: float = setting(0.75, "px", "Gaussian blur on the final frames.")
     crop_margin: float = setting(0.04, "", "Empty margin around the content, as a fraction of the frame.")
 
@@ -153,6 +170,11 @@ class OutputSettings:
     name: str = setting("", "", "Output name; empty means the recipe file's name.")
     frame_px: int = setting(256, "px", "Width and height of one frame.")
     columns: int = setting(0, "", "Frames per sheet row; 0 means the smallest square grid.")
+    channels: str = setting(SHADE_LAYOUT, "", "What the sheet's R, G, B and A hold, written as is to the JSON's "
+                                              "`channels`. `heat,thickness,shade,unused`: B is how lit the "
+                                              "smoke is by the key light with its own shadow baked in, A is "
+                                              "255. `heat,thickness,normal_x,normal_y`: B and A are the "
+                                              "camera-space surface normal's x and y.", CHANNEL_LAYOUTS)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -165,14 +187,14 @@ class PreviewSettings:
 @dataclass(frozen=True, kw_only=True)
 class BackgroundSettings:
     neutral: str = setting("#808080", "sRGB", "Background of contact_neutral.png.")
-    grass: str = setting("#aac476", "sRGB", "Background of contact_grass.png (Petri's mid grass).")
+    grass: str = setting("#aac476", "sRGB", "Background of contact_grass.png (a mid grass green).")
 
 
 @dataclass(frozen=True, kw_only=True)
 class LookSettings:
-    ambient: float = setting(0.65, "", "Light every smoke surface gets, 0 to 1.")
-    sun_dir: Vec3 = setting((-0.5, 0.7, 0.5), "", "Direction toward the sun in camera space (x right, y up, "
-                                                  "z toward the camera).")
+    ambient: float = setting(0.65, "", "Light every smoke surface gets, 0 to 1. Normal layout only.")
+    shade_depth: float = setting(0.75, "", "How dark the baked shade takes shadowed smoke: 0 ignores the "
+                                           "shade, 1 takes fully shadowed smoke to black. Shade layout only.")
     smoke_ramp: tuple[ColorStop, ...] = setting(
         ((0.0, "#aea193"), (0.4, "#bc9c84"), (0.75, "#dca07a"), (1.0, "#f5b47e")), "",
         "Smoke color by heat, as [position, sRGB] stops (cool end from the reference's sunlit smoke).")

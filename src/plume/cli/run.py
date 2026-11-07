@@ -16,6 +16,7 @@ from plume.recipe.variation import RecipeOrigin
 from plume.render.camera import DomainView, make_camera, make_domain_view
 from plume.render.frame_renderer import FrameRenderer
 from plume.report.channels import channel_strip
+from plume.report.composite import sheet_look
 from plume.report.contact import contact_sheet
 from plume.report.numbers import RunFacts, measure, numbers_text
 from plume.report.timing import StageTimer
@@ -120,10 +121,11 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
                      frame_m=assembled.frame_m, seat=assembled.seat, source=source, tool=tool_label(),
                      written_by=command)
     files["json"].write_text(sheet_json_text(info), newline="\n")
-    look = recipe.look
-    contact_sheet(frames, columns, look.backgrounds.neutral, look).save(files["contact_neutral"], compress_level=6)
-    contact_sheet(frames, columns, look.backgrounds.grass, look).save(files["contact_grass"], compress_level=6)
-    channel_strip(frames, look).save(files["channels"], compress_level=6)
+    style = sheet_look(recipe)
+    backgrounds = recipe.look.backgrounds
+    contact_sheet(frames, columns, backgrounds.neutral, style).save(files["contact_neutral"], compress_level=6)
+    contact_sheet(frames, columns, backgrounds.grass, style).save(files["contact_grass"], compress_level=6)
+    channel_strip(frames, style).save(files["channels"], compress_level=6)
     nx, ny, nz = derived.cells
     facts = RunFacts(recipe=source, backend=device, grid=f"{nx} x {ny} x {nz} cells of {recipe.domain.cell_m:.6f} m",
                      fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor)

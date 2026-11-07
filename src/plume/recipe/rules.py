@@ -104,6 +104,11 @@ def _check_render(recipe: Recipe) -> None:
     _positive("render.normal_fade_thickness", render.normal_fade_thickness)
     _at_least("render.soften_px", render.soften_px, 0.0)
     _between("render.crop_margin", render.crop_margin, 0.0, 1.0)
+    if not any(render.light_dir):
+        raise RecipeError("render.light_dir must point somewhere; got (0, 0, 0)")
+    _between("render.shade_fill", render.shade_fill, 0.0, 1.0)
+    _positive("render.shade_fade_thickness", render.shade_fade_thickness)
+    _positive("render.shade_neighborhood_px", render.shade_neighborhood_px)
 
 
 def _check_output(recipe: Recipe) -> None:
@@ -117,6 +122,7 @@ def _check_output(recipe: Recipe) -> None:
 def _check_look(recipe: Recipe) -> None:
     look = recipe.look
     _between("look.ambient", look.ambient, 0.0, 1.0)
+    _between("look.shade_depth", look.shade_depth, 0.0, 1.0)
     _ramp("look.smoke_ramp", look.smoke_ramp)
     _ramp("look.emission_ramp", look.emission_ramp)
     _at_least("look.contact_px", look.contact_px, MIN_FRAME_PX)

@@ -7,8 +7,7 @@ composite over the neutral background.
 import numpy as np
 from PIL import Image, ImageDraw
 
-from plume.recipe.schema import LookSettings
-from plume.report.composite import decode
+from plume.report.composite import SheetLook, decode
 from plume.report.contact import GAP_COLOR, GAP_PX, composited_image, draw_label, label_font
 
 STRIP_FRAMES = 6
@@ -24,7 +23,7 @@ def strip_frame_indices(frame_count: int) -> list[int]:
     return sorted({round(i * (frame_count - 1) / (count - 1)) for i in range(count)})
 
 
-def channel_strip(frames: list[np.ndarray], look: LookSettings) -> Image.Image:
+def channel_strip(frames: list[np.ndarray], style: SheetLook) -> Image.Image:
     """The strip image for the run's frames."""
     size = frames[0].shape[0]
     indices = strip_frame_indices(len(frames))
@@ -37,18 +36,18 @@ def channel_strip(frames: list[np.ndarray], look: LookSettings) -> Image.Image:
         draw_label(draw, (GAP_PX + column * (size + GAP_PX) + 3, 3), title, font)
     for row, index in enumerate(indices):
         y = HEADER_PX + row * (size + GAP_PX)
-        for column, panel in enumerate(_panels(frames[index], look)):
+        for column, panel in enumerate(_panels(frames[index], style)):
             strip.paste(panel, (GAP_PX + column * (size + GAP_PX), y))
         draw_label(draw, (GAP_PX + 3, y + 2), f"frame {index}", font)
     return strip
 
 
-def _panels(frame: np.ndarray, look: LookSettings) -> list[Image.Image]:
+def _panels(frame: np.ndarray, style: SheetLook) -> list[Image.Image]:
     decoded = decode(frame)
     normal_color = np.floor((decoded.normal + 1.0) * 0.5 * 255.0 + 0.5).astype(np.uint8)
     return [
         Image.fromarray(frame[..., 0]).convert("RGB"),
         Image.fromarray(frame[..., 1]).convert("RGB"),
         Image.fromarray(normal_color),
-        composited_image(frame, look.backgrounds.neutral, look),
+        composited_image(frame, style.look.backgrounds.neutral, style),
     ]

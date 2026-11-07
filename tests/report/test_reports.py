@@ -4,11 +4,11 @@ import pytest
 from plume.recipe.schema import BackgroundSettings, LookSettings
 from plume.report.channels import channel_strip, strip_frame_indices
 from plume.report.color import hex_to_linear
-from plume.report.composite import composite
+from plume.report.composite import SheetLook, composite
 from plume.report.contact import contact_sheet
 from plume.report.numbers import RunFacts, measure, numbers_text, peak_and_fade, read_numbers
 
-LOOK = LookSettings(backgrounds=BackgroundSettings())
+LOOK = SheetLook(look=LookSettings(backgrounds=BackgroundSettings()), light_dir=(-0.5, 0.7, 0.5))
 
 
 def frame_with_square(thickness_byte, heat_byte=0, size=32, lo=8, hi=24):
@@ -66,7 +66,7 @@ def test_strip_indices_are_evenly_spaced_from_first_to_last():
 
 def test_contact_sheet_and_strip_sizes():
     frames = [frame_with_square(200)] * 5
-    sheet = contact_sheet(frames, columns=3, background_hex="#808080", look=LOOK)
+    sheet = contact_sheet(frames, columns=3, background_hex="#808080", style=LOOK)
     assert sheet.size == (3 * 130 + 2, 2 * 130 + 2)
     strip = channel_strip(frames, LOOK)
     assert strip.size == (4 * 34 + 2, 18 + 5 * 34 + 2)
