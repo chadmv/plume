@@ -14,6 +14,7 @@ uv sync                                               # install (Python 3.13, Wa
 uv run plume run recipes/smoke_puff.toml --preview    # quick look: 48 cells on the long axis, 16 frames
 uv run plume run recipes/smoke_puff.toml              # full sheet
 uv run plume check recipes/smoke_puff.toml            # validate, print resolved settings, no simulation
+uv run plume run recipes/smoke_puff.toml --preview --set forces.drag_per_s=0.4   # one-off override
 uv run pytest                                         # all tests (the gpu-marked one skips without CUDA)
 uv run python -m plume.recipe.reference               # regenerate docs/recipe-reference.md
 ```
@@ -27,7 +28,8 @@ device compiles kernels (about 20 s); later runs load them from Warp's cache.
 2. `plume run <recipe> --preview`; read the stdout summary (peak frame, fade frame, frame_m, seat).
 3. Look at `out/<name>/preview/contact_grass.png` and `channels.png`; read `numbers.txt` for coverage,
    bounds and thickness per frame.
-4. Change one or two values; repeat. Run without `--preview` once the look is right.
+4. Change one or two values (try them first with `--set key=value`, then write them into the recipe);
+   repeat. Run without `--preview` once the look is right.
 
 `docs/look-tuning.md` maps "what I see" to "which value to change"; add to it whenever a lesson is learned.
 
