@@ -3,6 +3,7 @@ dissipate."""
 
 from plume.recipe.schema import Recipe
 from plume.sim.advect import advect_maccormack
+from plume.sim.conserve import SmokeBudget
 from plume.sim.dissipate import dissipate
 from plume.sim.emitters import emit, emitter_params
 from plume.sim.forces import apply_buoyancy, apply_drag
@@ -21,6 +22,7 @@ class Stepper:
         self.recipe = recipe
         self.emitters = emitter_params(recipe.emitter, grid.device)
         self.pressure_solve = make_pressure_solve(grid, recipe.solver)
+        self.smoke_budget = SmokeBudget(grid)
         self.confinement = VorticityConfinement(grid) if recipe.forces.vorticity_confinement > 0 else None
 
     def step(self, time_s: float, dt: float) -> None:
@@ -51,6 +53,9 @@ class Stepper:
 
     def _advect_scalars(self, dt: float) -> None:
         velocity = tuple(field.data for field in self.grid.velocity_fields())
-        for field in (self.grid.smoke, self.grid.temperature):
-            advect_maccormack(field, velocity, self.grid, dt)
-            field.swap()
+        target = self.smoke_budget.expected_after(self.grid, dt)
+        advect_maccormack(self.grid.smoke, velocity, self.grid, dt)
+        self.smoke_budget.rescale(self.grid, target)
+        self.grid.smoke.swap()
+        advect_maccormack(self.grid.temperature, velocity, self.grid, dt)
+        self.grid.temperature.swap()

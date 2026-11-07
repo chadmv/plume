@@ -3,6 +3,8 @@
 MacCormack runs plain semi-Lagrangian advection backward, then forward again, and uses the round trip's
 error to correct the first result. The correction is clamped to the values the backtraced sample blended,
 so it never invents new extremes.
+
+Clamped MacCormack does not conserve smoke; `sim/conserve.py` corrects the total after each step.
 """
 
 import warp as wp
@@ -72,3 +74,4 @@ def _launch_trace(src: wp.array, dst: wp.array, field: AdvectedField,
     wp.launch(semi_lagrangian_kernel, dim=src.shape, device=grid.device,
               inputs=[src, dst, u, v, w, grid.info, dt_over_cell, field.offset, field.outside,
                       field.uses_outside])
+

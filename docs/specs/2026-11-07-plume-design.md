@@ -265,6 +265,7 @@ is generated from it (D33).
   `../` in it could write outside the output folder).
 - Advection loses some smoke: a small, sharp puff loses about 10 percent over 40 steps (plain
   semi-Lagrangian about 7). The projection leaves almost no divergence, so this is the scheme, not a leak.
+  (Slice 2 found the real puff gains smoke instead and added a smoke budget; see section 13.)
 - Measured at the close of slice 1, wall clock with kernels cached: the smoke puff preview takes about
   2.5 s on the 2080 Ti and 10 s on CPU (Windows); the full sheet (80 x 100 x 80 cells, 64 frames at
   256 px) about 6.5 s on the 2080 Ti. Runs measured earlier, during tuning, were slower (about 5, 13 and
@@ -298,6 +299,11 @@ is generated from it (D33).
   `solver.max_substeps` the run stops with exit code 2. When the cap does not bind, steps land exactly where
   slice 1's did. The counts go to `settings.toml` `[resolved]` (`steps_per_frame`, `total_steps`,
   `warmup_steps_run`) and the stdout summary.
+- **Smoke budget** (3.2 step 5, closing the advection backlog item): clamped MacCormack gained smoke on
+  the real puff (30 percent over 2.4 s with no dissipation; 68 to 109 percent with turbulence, more on the
+  preview grid), so after each smoke advection the field is scaled to the total before the step minus the
+  upwind outflow through open faces. Totals come from deterministic row sums added in numpy float64.
+  Temperature and velocity are not rescaled.
 - **Variations** (D23, D27): `extends` names a parent relative to the recipe (no absolute paths, `.toml`
   only, chains allowed, loops rejected); tables merge key by key, anything else (the `[[emitter]]` list
   included) replaces. `--set key=value` on `run` and `check` applies after `extends`, reads the value as
