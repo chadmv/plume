@@ -1,10 +1,12 @@
 ---
 title: Recipe mistakes pass plume check and fail late
 type: bug
-status: open
+status: closed
 created: 2026-11-07
 priority: medium
 source: deep roadmap gaps review, 2026-11-07
+closed: 2026-11-07
+resolution: fixed
 ---
 
 # Recipe mistakes pass plume check and fail late
@@ -29,3 +31,6 @@ D27 promise.
 ## Related
 - `src/plume/recipe/build.py:66-69`, `src/plume/recipe/rules.py:48-69`, `src/plume/recipe/derived.py:28-29`
 - `src/plume/sim/noise.py:27`, `src/plume/cli/main.py:21`, `:36-40`
+
+## Resolution
+Fixed on `claude/project-thread-8mu9f1`. A non-finite number (nan, inf, or a whole number too large for a float) is a recipe error when the recipe is built (`recipe/build.py`), from a file or `--set`. An emitter whose shape misses the requested domain on any axis is a recipe error (`recipe/rules.py`, `_check_reaches_domain`); one centered outside but reaching in, such as a ground source sunk below the floor, still loads. `seed` must be 0 to `SEED_MAX` (2^31 - 1, `recipe/schema.py`), and the noise hash adds its offset unsigned. A duration too small for its frames is a recipe error. Usage errors exit 64 (`cli/main.py`, `EXIT_USAGE`); the README lists the exit codes. Remaining extreme finite values: [[bug-2026-11-07-huge-finite-recipe-values-hang-or-crash]].
