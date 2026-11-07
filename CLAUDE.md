@@ -60,3 +60,6 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
 - `docs/specs/`, `docs/plans/`: design and plans. `docs/retros/`: one per slice; read the newest first.
 - `docs/backlog/`: deferred work, one file per item. `docs/look-tuning.md`, `docs/recipe-reference.md`.
 - `recipes/`: example and test recipes. Game recipes live in Petri beside the effects that use them.
+- `tests/golden/`: the `numbers.txt` of each approved preview; a test reruns the preview on CPU and
+  compares within tolerance. After the user approves a changed look, copy the new preview's
+  `numbers.txt` over the golden file.
