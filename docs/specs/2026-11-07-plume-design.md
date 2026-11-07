@@ -301,9 +301,11 @@ is generated from it (D33).
   `warmup_steps_run`) and the stdout summary.
 - **Smoke budget** (3.2 step 5, closing the advection backlog item): clamped MacCormack gained smoke on
   the real puff (30 percent over 2.4 s with no dissipation; 68 to 109 percent with turbulence, more on the
-  preview grid), so after each smoke advection the field is scaled to the total before the step minus the
-  upwind outflow through open faces. Totals come from deterministic row sums added in numpy float64.
-  Temperature and velocity are not rescaled.
+  preview grid), so after each smoke advection the field is scaled by one number to hold its total between
+  the plain semi-Lagrangian pass's total and the total before the step: advection never creates smoke,
+  and smoke leaving through open faces counts the way the scheme carries it. (An outflow estimate was
+  tried first and drained smoke still inside the domain.) Totals come from deterministic line sums added
+  in numpy float64. Temperature and velocity are not rescaled.
 - **Variations** (D23, D27): `extends` names a parent relative to the recipe (no absolute paths, `.toml`
   only, chains allowed, loops rejected); tables merge key by key, anything else (the `[[emitter]]` list
   included) replaces. `--set key=value` on `run` and `check` applies after `extends`, reads the value as

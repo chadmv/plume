@@ -35,9 +35,10 @@ whenever a run teaches something.
   stdout `steps` line says how many steps the CFL cap added.
 - **Strong confinement tears smoke into streaks.** Confinement feeds on the spin it creates; above about 4
   for a 0.3 m puff it shreds the smoke into thin strands.
-- **Smoke only fades through dissipation and open faces.** Since slice 2 advection keeps the smoke total
-  exactly (before, clamped MacCormack added up to a third more over a puff's life, and more with
-  turbulence), so `dissipation.smoke_per_s` alone sets how fast a puff fades.
+- **Smoke never grows on its own.** Since slice 2 advection never adds smoke (before, clamped MacCormack
+  added up to a third more over a puff's life, and doubled it with turbulence), so
+  `dissipation.smoke_per_s` and open faces set how fast a puff fades. A small, sharp puff still loses a
+  little to the scheme's blur.
 
 ## Iterating
 

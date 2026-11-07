@@ -34,6 +34,8 @@ the scheme, not a leak. The frame loop test was relaxed to 320 K with a 15 perce
   plain puff, and with turbulence and confinement 68 percent on a 0.031 m grid against 109 percent on the
   0.052 m preview grid. Clamping the correction's dips at wispy edges adds smoke, more on coarse grids, so
   preview and final drifted apart. Fixed with a smoke budget (`src/plume/sim/conserve.py`): after each
-  advection the field is scaled to the total before the step minus the upwind outflow through open faces.
-  The same probes now hold the total to within 0.05 percent; the closed-box test bound went from 15
-  percent to 1e-4.
+  advection the field is scaled by one number so its total sits between the plain semi-Lagrangian pass's
+  total and the total before the step. Advection never creates smoke now; the small-puff loss this item
+  first described (plain semi-Lagrangian's own) remains and is accepted, since it is the same on preview
+  and final grids. A first version budgeted "before minus estimated outflow" and drained smoke still in
+  the domain when some left through an open face; review caught it.
