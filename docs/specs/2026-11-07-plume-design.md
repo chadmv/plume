@@ -260,9 +260,10 @@ is generated from it (D33).
   `../` in it could write outside the output folder).
 - Advection loses some smoke: a small, sharp puff loses about 10 percent over 40 steps (plain
   semi-Lagrangian about 7). The projection leaves almost no divergence, so this is the scheme, not a leak.
-- Measured on the 2080 Ti: the smoke puff preview takes about 5 s warm and the full sheet (80 x 100 x 80
-  cells, 64 frames at 256 px) about 15 s; the CPU preview takes about 13 s on Windows. The first run on a
-  device adds about 20 s of kernel compiling.
+- Measured at the close of slice 1, wall clock with kernels cached: the smoke puff preview takes about
+  2.5 s on the 2080 Ti and 10 s on CPU (Windows); the full sheet (80 x 100 x 80 cells, 64 frames at
+  256 px) about 6.5 s on the 2080 Ti. Runs measured earlier, during tuning, were slower (about 5, 13 and
+  15 s). The first run on a device adds about 20 s of kernel compiling.
 
 ## 12. Risks
 
