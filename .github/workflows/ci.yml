@@ -1,0 +1,20 @@
+# Runs the whole test suite on Linux without a GPU: the same path cloud sessions use.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - name: Install
+        run: uv sync --locked
+      - name: Test (CPU)
+        run: uv run pytest -m "not gpu"
+      - name: Preview the smoke puff on CPU
+        run: uv run plume run recipes/smoke_puff.toml --preview --device cpu
