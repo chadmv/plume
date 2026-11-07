@@ -82,6 +82,14 @@ class EmitterSettings:
 
 
 @dataclass(frozen=True, kw_only=True)
+class TurbulenceSettings:
+    scale_m: float = setting(0.3, "m", "Size of the swirls.")
+    strength_mps2: float = setting(0.0, "m/s^2", "Acceleration of the swirling push; 0 for none.")
+    speed_mps: float = setting(0.2, "m/s", "How fast the swirl pattern changes: it renews every "
+                                           "`scale_m / speed_mps` seconds; 0 freezes it.")
+
+
+@dataclass(frozen=True, kw_only=True)
 class ForceSettings:
     gravity_mps2: float = setting(9.81, "m/s^2", "Strength of gravity.")
     heat_buoyancy: float = setting(1.0, "", "Lift from heat; 1 is ideal-gas buoyancy.")
@@ -93,6 +101,7 @@ class ForceSettings:
     vorticity_confinement: float = setting(0.0, "1/s", "Strength of the push that keeps small swirls alive "
                                                        "(Fedkiw 2001), scaled by the cell size so previews "
                                                        "keep their swirl; 0 for none.")
+    turbulence: TurbulenceSettings = section("Seeded curl-noise swirls, in meters, so previews match.")
 
 
 @dataclass(frozen=True, kw_only=True)

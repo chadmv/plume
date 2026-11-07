@@ -77,6 +77,9 @@ def _check_forces(recipe: Recipe) -> None:
     forces = recipe.forces
     _at_least("forces.drag_per_s", forces.drag_per_s, 0.0)
     _at_least("forces.vorticity_confinement", forces.vorticity_confinement, 0.0)
+    _positive("forces.turbulence.scale_m", forces.turbulence.scale_m)
+    _at_least("forces.turbulence.strength_mps2", forces.turbulence.strength_mps2, 0.0)
+    _at_least("forces.turbulence.speed_mps", forces.turbulence.speed_mps, 0.0)
     if any(forces.wind_mps) and forces.drag_per_s == 0.0:
         raise RecipeError("forces.wind_mps needs forces.drag_per_s above 0: drag is what pulls the gas "
                           "toward the wind")

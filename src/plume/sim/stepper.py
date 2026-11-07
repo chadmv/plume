@@ -9,6 +9,7 @@ from plume.sim.forces import apply_buoyancy, apply_drag
 from plume.sim.grid import Grid
 from plume.sim.pressure import project
 from plume.sim.pressure_solver import make_pressure_solve
+from plume.sim.turbulence import apply_turbulence
 from plume.sim.vorticity import VorticityConfinement
 
 
@@ -32,6 +33,9 @@ class Stepper:
         apply_buoyancy(grid, forces.gravity_mps2, forces.heat_buoyancy, forces.smoke_weight, ambient, dt)
         if self.confinement is not None:
             self.confinement.apply(grid, forces.vorticity_confinement, dt)
+        turbulence = forces.turbulence
+        apply_turbulence(grid, recipe.seed, turbulence.scale_m, turbulence.strength_mps2, turbulence.speed_mps,
+                         time_s, dt)
         apply_drag(grid, forces.wind_mps, forces.drag_per_s, dt)
         self._advect_velocity()
         project(grid, self.pressure_solve)

@@ -86,6 +86,16 @@ Forces on the gas.
 | `drag_per_s` | 1/s | `0.0` | Rate the gas's velocity relaxes toward `wind_mps`; 0 for none. |
 | `vorticity_confinement` | 1/s | `0.0` | Strength of the push that keeps small swirls alive (Fedkiw 2001), scaled by the cell size so previews keep their swirl; 0 for none. |
 
+## [forces.turbulence]
+
+Seeded curl-noise swirls, in meters, so previews match.
+
+| key | unit | default | meaning |
+| --- | --- | --- | --- |
+| `scale_m` | m | `0.3` | Size of the swirls. |
+| `strength_mps2` | m/s^2 | `0.0` | Acceleration of the swirling push; 0 for none. |
+| `speed_mps` | m/s | `0.2` | How fast the swirl pattern changes: it renews every `scale_m / speed_mps` seconds; 0 freezes it. |
+
 ## [dissipation]
 
 How smoke and heat fade.
