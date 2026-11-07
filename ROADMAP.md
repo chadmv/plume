@@ -22,7 +22,7 @@ end of slice 6.
 ### Now
 - [Slice 2 - solver quality and iteration tools](docs/backlog/feature-2026-11-07-slice-2-solver-quality-iteration-tools.md) - the next slice in the D34 order and ready now; every later effect builds on its solver and its `extends` and `--set`
 - [Preview time steps are four times longer than the final run's](docs/backlog/bug-2026-11-07-preview-step-size-differs-from-final.md) - preview and final drift apart today, which undercuts slice 2's "preview and final look alike" review; fix it with slice 2's CFL cap
-- [Test that two identical GPU runs give identical bytes](docs/backlog/feature-2026-11-07-gpu-same-bytes-determinism-test.md) - quick win: lock in GPU same-bytes before slice 2 adds multigrid and vorticity kernels
+- [Test that two identical GPU runs give identical bytes](docs/backlog/closed/feature-2026-11-07-gpu-same-bytes-determinism-test.md) - quick win: lock in GPU same-bytes before slice 2 adds multigrid and vorticity kernels
 - [Advection loses about 10 percent of a small puff's smoke](docs/backlog/idea-2026-11-07-advection-loses-small-puff-smoke.md) - its own summary says to weigh it with slice 2's solver work; decide it while the solver is open
 - [Light smoke barely shows on the neutral contact sheet](docs/backlog/idea-2026-11-07-light-smoke-neutral-contact-sheet.md) - quick win: a darker neutral or a checker makes every smoke look review use both sheets
 
@@ -94,7 +94,7 @@ end of slice 6.
 
 ## Tests and CI (tests-ci)
 
-1. [Test that two identical GPU runs give identical bytes](docs/backlog/feature-2026-11-07-gpu-same-bytes-determinism-test.md) (feature, high) - determinism on the GPU, before slice 2's kernels
+1. [Test that two identical GPU runs give identical bytes](docs/backlog/closed/feature-2026-11-07-gpu-same-bytes-determinism-test.md) (feature, high) - determinism on the GPU, before slice 2's kernels
    quick win
 2. [Tests for box emitters, noise breakup, warmup and open-face outflow](docs/backlog/feature-2026-11-07-tests-box-emitters-breakup-warmup-outflow.md) (feature, medium) - D10, D22 and D24 behavior later slices depend on
 3. [Guard the preview time budget in CI](docs/backlog/feature-2026-11-07-preview-time-budget-guard-ci.md) (feature, low) - keeps the preview budget honest between slices
