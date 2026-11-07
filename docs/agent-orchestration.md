@@ -119,10 +119,10 @@ commit, the pull request to `main`, the retro in `docs/retros/`, and backlog ite
 
 ## Where sessions run
 
-- **The PC (2080 Ti):** everything, including the `gpu` test and GPU run times.
+- **The PC (2080 Ti):** everything, including the `gpu` tests and GPU run times.
 - **Cloud and Linux sessions without a GPU:** all agents work; the verifier runs `pytest -m "not gpu"` and
-  CPU previews and says "GPU not checked". GPU timing and the CPU against CUDA test wait for a PC run
-  before the pull request merges. CI (`.github/workflows/ci.yml`) is the Linux CPU check.
+  CPU previews and says "GPU not checked". GPU timing and the `gpu` tests (CPU against CUDA, and two CUDA
+  runs giving the same bytes) wait for a PC run before the pull request merges. CI (`.github/workflows/ci.yml`) is the Linux CPU check.
 
 ## Hard rules every stage keeps
 

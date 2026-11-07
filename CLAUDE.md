@@ -15,7 +15,7 @@ uv run plume run recipes/smoke_puff.toml --preview    # quick look: 48 cells on 
 uv run plume run recipes/smoke_puff.toml              # full sheet
 uv run plume check recipes/smoke_puff.toml            # validate, print resolved settings, no simulation
 uv run plume run recipes/smoke_puff.toml --preview --set forces.drag_per_s=0.4   # one-off override
-uv run pytest                                         # all tests (the gpu-marked one skips without CUDA)
+uv run pytest                                         # all tests (the gpu-marked ones skip without CUDA)
 uv run python -m plume.recipe.reference               # regenerate docs/recipe-reference.md
 ```
 
