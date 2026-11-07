@@ -43,8 +43,14 @@ end of slice 6.
 - [Slice 4 - keyframed and burst emitters, ground dust](docs/backlog/feature-2026-11-07-slice-4-burst-emitters-ground-dust.md) - blocked by slice 3
 - [Slice 5 - looping sheets](docs/backlog/feature-2026-11-07-slice-5-looping-sheets.md) - blocked by slice 4
 - [Slice 6 - 512 px close-ups and performance](docs/backlog/feature-2026-11-07-slice-6-close-ups-performance.md) - blocked by slice 5
+- [A live viewer app with an MCP server for interactive, chat-driven tuning](docs/backlog/feature-2026-11-07-live-interactive-simulation-viewer.md) - after the first version; it lifts the brief's headless-only constraint, so it needs its own design
 
 ## What moved
+
+**Refresh 3 (light)**
+- New: the live viewer with an MCP server for chat-driven tuning, at the end of Later. It comes after the
+  first version because the brief makes Plume headless and command-line only.
+- New theme: Interactive tools (interactive), because no existing section covers it.
 
 **Refresh 2 (light)**
 - New: filed the ten gaps the deep review suggested; all are placed below.
@@ -104,6 +110,10 @@ end of slice 6.
 
 1. [Light smoke barely shows on the neutral contact sheet](docs/backlog/idea-2026-11-07-light-smoke-neutral-contact-sheet.md) (idea, -) - makes the neutral sheet useful for every smoke review
    quick win
+
+## Interactive tools (interactive)
+
+1. [A live viewer app with an MCP server for interactive, chat-driven tuning](docs/backlog/feature-2026-11-07-live-interactive-simulation-viewer.md) (feature, low) - chat-driven look tuning with a live render; after the first version, and needs a design that changes the headless-only constraint
 
 ## Deferred
 - None. The brief's deliberately deferred work (motion vectors, obstacles, sparse grids, sparks, more
