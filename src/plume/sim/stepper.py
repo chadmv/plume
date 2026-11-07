@@ -8,6 +8,7 @@ from plume.sim.emitters import emit, emitter_params
 from plume.sim.forces import apply_buoyancy
 from plume.sim.grid import Grid
 from plume.sim.pressure import project
+from plume.sim.pressure_solver import make_pressure_solve
 
 
 class Stepper:
@@ -18,6 +19,7 @@ class Stepper:
         self.recipe = recipe
         self.dt = dt
         self.emitters = emitter_params(recipe.emitter, grid.device)
+        self.pressure_solve = make_pressure_solve(grid, recipe.solver)
 
     def step(self, time_s: float) -> None:
         """Advances from `time_s` to `time_s + dt`."""
@@ -27,7 +29,7 @@ class Stepper:
         forces = recipe.forces
         apply_buoyancy(grid, forces.gravity_mps2, forces.heat_buoyancy, forces.smoke_weight, ambient, dt)
         self._advect_velocity()
-        project(grid, recipe.solver.pressure_iterations)
+        project(grid, self.pressure_solve)
         self._advect_scalars()
         dissipate(grid, recipe.dissipation.smoke_per_s, recipe.dissipation.cooling_per_s, ambient, dt)
 

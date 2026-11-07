@@ -97,7 +97,14 @@ class DissipationSettings:
 
 @dataclass(frozen=True, kw_only=True)
 class SolverSettings:
-    pressure_iterations: int = setting(60, "", "Red-black Gauss-Seidel sweeps per pressure solve.")
+    pressure_solver: str = setting("multigrid", "", "How the pressure is solved: `multigrid` (fixed V-cycles) or "
+                                                    "`gauss_seidel` (slice 1's fixed sweeps).",
+                                   ("multigrid", "gauss_seidel"))
+    pressure_iterations: int = setting(60, "", "Red-black Gauss-Seidel sweeps per pressure solve, for "
+                                               "`gauss_seidel`.")
+    multigrid_cycles: int = setting(2, "", "Multigrid V-cycles per pressure solve.")
+    multigrid_sweeps: int = setting(2, "", "Smoothing sweeps before and after each multigrid level's "
+                                           "correction.")
 
 
 @dataclass(frozen=True, kw_only=True)

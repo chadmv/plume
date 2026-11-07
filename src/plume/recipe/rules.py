@@ -43,6 +43,9 @@ def _check_time(recipe: Recipe) -> None:
     _at_least("time.substeps", time.substeps, 1)
     _at_least("time.warmup_s", time.warmup_s, 0.0)
     _at_least("solver.pressure_iterations", recipe.solver.pressure_iterations, 1)
+    _at_least("solver.multigrid_cycles", recipe.solver.multigrid_cycles, 1)
+    # One sweep a side is unstable next to open faces (measured in T2.2); two is the least that holds.
+    _at_least("solver.multigrid_sweeps", recipe.solver.multigrid_sweeps, 2)
 
 
 def _check_emitters(recipe: Recipe) -> None:

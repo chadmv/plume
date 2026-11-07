@@ -98,7 +98,10 @@ Solver controls.
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
-| `pressure_iterations` | - | `60` | Red-black Gauss-Seidel sweeps per pressure solve. |
+| `pressure_solver` | - | `"multigrid"` | How the pressure is solved: `multigrid` (fixed V-cycles) or `gauss_seidel` (slice 1's fixed sweeps). One of: `multigrid`, `gauss_seidel`. |
+| `pressure_iterations` | - | `60` | Red-black Gauss-Seidel sweeps per pressure solve, for `gauss_seidel`. |
+| `multigrid_cycles` | - | `2` | Multigrid V-cycles per pressure solve. |
+| `multigrid_sweeps` | - | `2` | Smoothing sweeps before and after each multigrid level's correction. |
 
 ## [camera]
 

@@ -25,6 +25,12 @@ class GridInfo:
     origin_m: wp.vec3
     open_lo: wp.vec3i
     open_hi: wp.vec3i
+    # Pressure-solve geometry, for multigrid's coarse levels (`sim/multigrid.py`); the simulation grid has
+    # fill_hi (1, 1, 1) and ghost_gap 0.5. fill_hi: the share of the last cell on each axis that lies
+    # inside the domain (a coarse level of an odd-sized axis overhangs it). ghost_gap: how far beyond an
+    # open face, in this grid's cells, the pressure is held at 0.
+    fill_hi: wp.vec3
+    ghost_gap: float
 
 
 class AdvectedField:
@@ -71,6 +77,8 @@ def make_grid(derived: Derived, cell_m: float, faces: FaceSettings, ambient_k: f
     info.origin_m = wp.vec3(*derived.domain_min_m)
     info.open_lo = wp.vec3i(*(_is_open(kind) for kind in (faces.left, faces.bottom, faces.back)))
     info.open_hi = wp.vec3i(*(_is_open(kind) for kind in (faces.right, faces.top, faces.front)))
+    info.fill_hi = wp.vec3(1.0, 1.0, 1.0)
+    info.ghost_gap = 0.5
     center_shape = (nx, ny, nz)
     return Grid(
         info=info,
