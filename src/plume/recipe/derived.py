@@ -16,8 +16,8 @@ class Derived:
     steps_per_frame: int
 
     def frame_time_s(self, frame: int) -> float:
-        """Effect time of a frame, after warmup."""
-        return frame / self.fps
+        """Effect time a frame shows, counted from the end of warmup: frames end at the duration."""
+        return (frame + 1) / self.fps
 
 
 def derive(recipe: Recipe) -> Derived:
