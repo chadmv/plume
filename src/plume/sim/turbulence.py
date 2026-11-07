@@ -3,11 +3,12 @@
 The push is the curl of a smooth random vector field (three value-noise components from `sim/noise.py`),
 so it only stirs the gas and never squeezes it. It is taken as a discrete curl on the grid, from the
 potential at each face's four edges, so its discrete divergence is zero and the pressure projection leaves
-it alone. Everything is in meters and seconds, so a preview's coarse grid gets the same push as the final
-run's (D30):
+it alone, except where a closed face zeroes the push through it. Everything is in meters and seconds, so a
+preview's coarse grid gets the same push as the final run's (D30):
 
 - `scale_m` is the swirl size: the potential is sampled at `position / scale_m`.
-- `strength_mps2` is the push's acceleration: the curl is measured in lattice units, where it is about 1.
+- `strength_mps2` is the push's acceleration: the curl is measured in lattice units, where
+  it peaks at about 3.4, so the gas's fastest swirl is a few times `strength_mps2 / drag_per_s`.
 - `speed_mps` is how fast the pattern changes: it blends to a fresh pattern every `scale_m / speed_mps`
   seconds, with the same smooth fade the noise uses in space.
 """

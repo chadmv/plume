@@ -23,10 +23,21 @@ def test_a_slow_puff_keeps_its_substeps(cpu_device):
 
 
 def test_a_cap_that_never_binds_changes_nothing(cpu_device):
-    # The default cap against one so loose it can never add a step: identical bytes.
-    _, capped = run(tiny_recipe())
-    _, loose = run(tiny_recipe(solver={"max_cells_per_step": 1000.0}))
-    assert all(np.array_equal(a, b) for a, b in zip(capped, loose))
+    # Against slice 1's loop, which stepped at `step count * dt` with no cap: identical bytes.
+    from plume.sim.grid import make_grid
+    from plume.sim.stepper import Stepper
+
+    recipe = tiny_recipe()
+    derived = derive(recipe)
+    _, capped = run(recipe)
+    grid = make_grid(derived, recipe.domain.cell_m, recipe.domain.faces, recipe.domain.ambient_k, "cpu")
+    stepper = Stepper(grid, recipe)
+    uncapped = []
+    for frame in range(recipe.time.frames):
+        for index in range(derived.steps_per_frame):
+            stepper.step((frame * derived.steps_per_frame + index) * derived.dt_s, derived.dt_s)
+        uncapped.append(grid.smoke.data.numpy().copy())
+    assert all(np.array_equal(a, b) for a, b in zip(capped, uncapped))
 
 
 def test_a_fast_emitter_gets_more_steps(cpu_device):
@@ -56,8 +67,19 @@ def test_two_runs_choose_the_same_steps(cpu_device):
     assert run(recipe)[0] == run(recipe)[0]
 
 
-def test_warmup_runs_in_blocks(cpu_device):
+def test_warmup_runs_in_blocks(cpu_device, monkeypatch):
     # Warmup 0.6 s at dt 1/12 s is 7 base steps: blocks of 3, 3 and 1.
+    from plume.sim import step_cap
+
+    blocks = []
+    original = step_cap.StepCap.plan
+
+    def recording_plan(self, grid, start_s, length_s, base_steps, label):
+        blocks.append((label, base_steps))
+        return original(self, grid, start_s, length_s, base_steps, label)
+
+    monkeypatch.setattr(step_cap.StepCap, "plan", recording_plan)
     log, _ = run(tiny_recipe(time={"duration_s": 1.0, "frames": 4, "warmup_s": 0.6}))
+    assert [base for label, base in blocks if label == "warmup"] == [3, 3, 1]
     assert log.warmup_steps == 7
     assert math.isclose(log.total_steps, 7 + 12)

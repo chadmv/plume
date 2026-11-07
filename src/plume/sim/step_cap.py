@@ -1,4 +1,5 @@
-"""The CFL cap (D10): enough steps that the fastest gas crosses at most `max_cells_per_step` cells per step.
+"""The CFL cap (D10): enough steps that the fastest gas, as measured at the start of each block, crosses at
+most `max_cells_per_step` cells per step. Speed gained during a block is caught at the next one.
 
 Advection traces back along the flow; a step that carries gas many cells at once skips over the cells in
 between and smears or tears what it carries. Before each block of steps (one frame's worth, or a piece of
@@ -50,7 +51,8 @@ class StepCap:
     def grid_speed(grid: Grid) -> float:
         """The fastest face velocity component, in m/s. Each component moves gas along its own axis, so
         the largest one bounds how many cells a step crosses on any axis."""
-        return max(float(np.abs(field.data.numpy().astype(np.float64)).max()) for field in grid.velocity_fields())
+        # The largest float32 magnitude is exact, so no float64 copy is needed.
+        return max(float(np.abs(field.data.numpy()).max()) for field in grid.velocity_fields())
 
     def emitter_speed(self, start_s: float, end_s: float) -> float:
         speeds = [speed for begin, finish, speed in self.emitters if begin < end_s and finish > start_s]

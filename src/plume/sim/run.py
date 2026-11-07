@@ -26,6 +26,7 @@ class StepLog:
     warmup_steps: int
     steps_per_frame: tuple[int, ...]
     base_steps_per_frame: int
+    base_warmup_steps: int
 
     @property
     def total_steps(self) -> int:
@@ -33,8 +34,9 @@ class StepLog:
 
     @property
     def added_steps(self) -> int:
-        """Steps the CFL cap added over the recipe's substeps, frames only."""
-        return sum(self.steps_per_frame) - self.base_steps_per_frame * len(self.steps_per_frame)
+        """Steps the CFL cap added over the recipe's substeps, warmup included."""
+        base = self.base_warmup_steps + self.base_steps_per_frame * len(self.steps_per_frame)
+        return self.total_steps - base
 
 
 def simulate(recipe: Recipe, derived: Derived, device: str, capture: Capture) -> StepLog:
@@ -50,7 +52,10 @@ def simulate(recipe: Recipe, derived: Derived, device: str, capture: Capture) ->
         length_s = base_steps * derived.dt_s
         steps = cap.plan(grid, start_s, length_s, base_steps, label).steps
         for index in range(steps):
-            stepper.step(start_s + index * length_s / steps, length_s / steps)
+            if steps == base_steps:  # the cap did not bind: exactly the uncapped loop's times
+                stepper.step((base_done + index) * derived.dt_s, derived.dt_s)
+            else:
+                stepper.step(start_s + index * length_s / steps, length_s / steps)
         base_done += base_steps
         return steps
 
@@ -64,4 +69,4 @@ def simulate(recipe: Recipe, derived: Derived, device: str, capture: Capture) ->
     for frame in range(recipe.time.frames):
         frame_steps.append(run_block(derived.steps_per_frame, f"frame {frame}"))
         capture(frame, grid)
-    return StepLog(warmup_steps, tuple(frame_steps), derived.steps_per_frame)
+    return StepLog(warmup_steps, tuple(frame_steps), derived.steps_per_frame, derived.warmup_steps)
