@@ -3,20 +3,10 @@ import math
 import numpy as np
 import pytest
 
-from plume.recipe.schema import RenderSettings
 from plume.render.camera import make_camera, make_domain_view
-from plume.render.frame_renderer import FrameRenderer
 from plume.render.raw_frame import HEAT, NORMAL_X, NORMAL_Y, NORMAL_Z, THICKNESS
 from support.grids import blob, fill, small_grid
-
-CELL_M = 0.1
-CELLS = (16, 16, 16)
-
-
-def render(grid, elevation_deg=0.0, **settings):
-    view = make_domain_view(make_camera(elevation_deg, 0.0), (-0.8, 0.0, -0.8), (1.6, 1.6, 1.6), CELL_M, 2.0)
-    renderer = FrameRenderer(view, RenderSettings(**settings), grid.cells, grid.device)
-    return view, renderer.render(grid)
+from support.render import CELL_M, CELLS, render
 
 
 def test_domain_view_covers_the_box_at_two_pixels_per_cell():

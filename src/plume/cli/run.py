@@ -68,7 +68,7 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
 
 def _simulate_and_capture(recipe: Recipe, derived: Derived, device: str, view: DomainView,
                           timer: StageTimer) -> tuple[list[np.ndarray], StepLog]:
-    renderer = FrameRenderer(view, recipe.render, derived.cells, device)
+    renderer = FrameRenderer(view, recipe.render, derived.cells, recipe.output.channels, device)
     raw_frames = []
 
     def capture(frame, grid):

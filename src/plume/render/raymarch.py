@@ -3,7 +3,9 @@
 Each ray gathers three things:
 - thickness: how much the smoke blocks the ray (Beer-Lambert), the sheet's G;
 - heat: glow from hot gas, hidden by smoke in front of it, the sheet's R before normalization;
-- normal: the smoke's surface direction, averaged with the weight each sample adds to the opacity.
+- by layout, either the shade (the key light reaching each sample, from the light volume, lifted by the
+  fill share) or the normal (the smoke's surface direction), each averaged with the weight the sample adds
+  to the opacity.
 """
 
 import warp as wp
@@ -18,6 +20,7 @@ THICKNESS = wp.constant(raw_frame.THICKNESS)
 NORMAL_X = wp.constant(raw_frame.NORMAL_X)
 NORMAL_Y = wp.constant(raw_frame.NORMAL_Y)
 NORMAL_Z = wp.constant(raw_frame.NORMAL_Z)
+SHADE = wp.constant(raw_frame.SHADE)
 
 
 @wp.struct
@@ -36,6 +39,8 @@ class LookParams:
     glow_start_k: float
     smoke_hides_heat: float
     normal_fade_thickness: float
+    shade_layout: int  # 1: write shade (reads `light`); 0: write the normal (reads `gradient`)
+    shade_fill: float
 
 
 @wp.func
@@ -57,8 +62,8 @@ def slab_range(origin: wp.vec3, direction: wp.vec3, box_min: wp.vec3, box_max: w
 
 @wp.kernel
 def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtype=float),
-                    gradient: wp.array3d(dtype=wp.vec3), info: GridInfo, view: ViewParams, look: LookParams,
-                    image: wp.array3d(dtype=float)):
+                    gradient: wp.array3d(dtype=wp.vec3), light: wp.array3d(dtype=float), info: GridInfo,
+                    view: ViewParams, look: LookParams, image: wp.array3d(dtype=float)):
     py, px = wp.tid()
     plane_x = view.left_m + (float(px) + 0.5) * view.pixel_m
     plane_y = view.top_m - (float(py) + 0.5) * view.pixel_m
@@ -70,6 +75,7 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
     transmittance = float(1.0)
     heat = float(0.0)
     normal_sum = wp.vec3(0.0, 0.0, 0.0)
+    shade_sum = float(0.0)
     if span[1] > span[0]:
         length = span[1] - span[0]
         steps = int(wp.ceil(length / (0.5 * info.cell_m)))
@@ -81,12 +87,26 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
             alpha = 1.0 - wp.exp(-look.opacity_per_density * density * step_m)
             glow = wp.max(sample_index_space(temperature, g) - look.glow_start_k, 0.0)
             heat = heat + glow * step_m * wp.pow(transmittance, look.smoke_hides_heat)
-            slope = sample_index_space(gradient, g)
-            if alpha > 0.0 and wp.length(slope) > 1.0e-9:
-                normal_sum = normal_sum - transmittance * alpha * wp.normalize(slope)
+            if look.shade_layout == 1:
+                lit = look.shade_fill + (1.0 - look.shade_fill) * sample_index_space(light, g)
+                shade_sum = shade_sum + transmittance * alpha * lit
+            else:
+                slope = sample_index_space(gradient, g)
+                if alpha > 0.0 and wp.length(slope) > 1.0e-9:
+                    normal_sum = normal_sum - transmittance * alpha * wp.normalize(slope)
             transmittance = transmittance * (1.0 - alpha)
 
     thickness = 1.0 - transmittance
+    image[py, px, HEAT] = heat
+    image[py, px, THICKNESS] = thickness
+    if look.shade_layout == 1:
+        shade = float(0.0)
+        if thickness > 0.0:
+            shade = shade_sum / thickness
+        image[py, px, SHADE] = shade
+        image[py, px, NORMAL_Y] = 0.0  # the shade layout leaves the last two slots empty
+        image[py, px, NORMAL_Z] = 0.0
+        return
     facing = wp.vec3(0.0, 0.0, 1.0)
     normal = facing
     camera_normal = wp.vec3(wp.dot(normal_sum, view.right), wp.dot(normal_sum, view.up),
@@ -96,8 +116,6 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
         normal = wp.vec3(normal[0], normal[1], wp.abs(normal[2]))
         weight = wp.clamp(thickness / look.normal_fade_thickness, 0.0, 1.0)
         normal = wp.normalize(wp.lerp(facing, normal, weight))
-    image[py, px, HEAT] = heat
-    image[py, px, THICKNESS] = thickness
     image[py, px, NORMAL_X] = normal[0]
     image[py, px, NORMAL_Y] = normal[1]
     image[py, px, NORMAL_Z] = normal[2]
