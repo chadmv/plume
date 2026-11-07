@@ -26,11 +26,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check":
             from plume.cli.check import run_check
 
-            run_check(Path(args.recipe), preview=args.preview)
+            run_check(Path(args.recipe), preview=args.preview, sets=tuple(args.set))
             return EXIT_OK
         from plume.cli.run import run_recipe
 
-        run_recipe(Path(args.recipe), preview=args.preview, device=args.device, out=args.out,
+        run_recipe(Path(args.recipe), preview=args.preview, device=args.device, out=args.out, sets=tuple(args.set),
                    command=" ".join(["plume", *argv]))
         return EXIT_OK
     except RecipeError as error:
@@ -49,6 +49,7 @@ def _parser() -> argparse.ArgumentParser:
     check = commands.add_parser("check", help="validate a recipe and print its resolved settings")
     check.add_argument("recipe", help="path to the recipe TOML")
     check.add_argument("--preview", action="store_true", help="resolve with --preview overrides")
+    _add_set_argument(check)
 
     run = commands.add_parser("run", help="simulate a recipe and write the sheet and reports")
     run.add_argument("recipe", help="path to the recipe TOML")
@@ -56,7 +57,14 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto",
                      help="where to simulate; auto uses the GPU when there is one")
     run.add_argument("--out", help="output folder; default out/<name>/")
+    _add_set_argument(run)
     return parser
+
+
+def _add_set_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
+                        help="override one recipe value, for example forces.drag_per_s=0.5 or "
+                             "emitter.puff.radius_m=0.4; repeatable")
 
 
 if __name__ == "__main__":

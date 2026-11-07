@@ -157,6 +157,9 @@ class LookSettings:
 
 @dataclass(frozen=True, kw_only=True)
 class Recipe:
+    extends: str = setting("", "", "Parent recipe this one builds on, as a path relative to this file. Tables "
+                                   "merge key by key; any other value, `[[emitter]]` included, replaces the "
+                                   "parent's. Empty in a resolved recipe.")
     seed: int = setting(0, "", "Seed for every random choice in the run.")
     domain: DomainSettings = section("The simulation box.")
     time: TimeSettings = section("Effect time and frames.")

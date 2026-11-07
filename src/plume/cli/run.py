@@ -9,9 +9,10 @@ import warp as wp
 from plume import tool_label
 from plume.cli.summary import print_summary
 from plume.recipe.derived import Derived, derive
-from plume.recipe.load import load_recipe
+from plume.recipe.load import load_recipe_with_origin
 from plume.recipe.schema import Recipe
 from plume.recipe.serialize import recipe_to_toml
+from plume.recipe.variation import RecipeOrigin
 from plume.render.camera import DomainView, make_camera, make_domain_view
 from plume.render.frame_renderer import FrameRenderer
 from plume.report.channels import channel_strip
@@ -37,11 +38,12 @@ class RunResult:
     timer: StageTimer
 
 
-def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, command: str) -> RunResult:
+def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, command: str,
+               sets: tuple[str, ...] = ()) -> RunResult:
     """Runs a recipe end to end, writes every output, prints the summary, and returns what it wrote."""
     timer = StageTimer()
     with timer.stage("load"):
-        recipe = load_recipe(recipe_path, preview=preview)
+        recipe, origin = load_recipe_with_origin(recipe_path, preview=preview, sets=sets)
         derived = derive(recipe)
         device_name = init_device(device)
     view = make_domain_view(make_camera(recipe.camera.elevation_deg, recipe.camera.azimuth_deg),
@@ -53,7 +55,7 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
     with timer.stage("report"):
         out_dir = _out_dir(recipe, out, preview)
         files, numbers = _write_outputs(out_dir, recipe, derived, device_name, assembled,
-                                        source_path(recipe_path), command)
+                                        source_path(recipe_path), command, origin)
     timer_path = out_dir / "timing.txt"
     timer_path.write_text(timer.text(), newline="\n")
     files["timing"] = timer_path
@@ -92,7 +94,7 @@ def _out_dir(recipe: Recipe, out: str | None, preview: bool) -> Path:
 
 
 def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str, assembled: AssembledFrames,
-                   source: str, command: str) -> tuple[dict[str, Path], str]:
+                   source: str, command: str, origin: RecipeOrigin) -> tuple[dict[str, Path], str]:
     name = recipe.output.name
     columns = recipe.output.columns
     files = {
@@ -119,5 +121,5 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
                      fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor)
     numbers = numbers_text(measure(frames, derived.fps), facts)
     files["numbers"].write_text(numbers, newline="\n")
-    files["settings"].write_text(recipe_to_toml(recipe, derived, device), newline="\n")
+    files["settings"].write_text(recipe_to_toml(recipe, derived, device, origin), newline="\n")
     return files, numbers
