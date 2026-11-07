@@ -21,6 +21,9 @@ through a ramp in the game, so the sheet stays grayscale data.
 
 ## The sheet contract (fixed by the user's request)
 
+Amended 2026-11-07 by `2026-11-07-shade-channel-design.md`: B and A are chosen per recipe, either shade and
+unused (the default) or normal x and y as below; the JSON's `channels` names the layout.
+
 - One RGBA PNG per flipbook, frames in rows, left to right and top to bottom.
   - R = heat (emission), normalized to the hottest frame of the whole sequence.
   - G = thickness (smoke density as alpha).
