@@ -33,7 +33,7 @@ make emitter blending a rate per second. Fold into slice 2, whose CFL cap also c
 `--preview` now sets `substeps = ceil(frames * substeps / preview.frames)` (`recipe/load.py`,
 `preview_substeps`), so the smoke puff preview takes 12 steps per frame of 0.0125 s, the full run's step.
 Emitter temperature and velocity blend by `1 - (1 - coverage) ** (dt / (1/80 s))` (`sim/emitters.py`,
-`blend_factor`), a rate per second that leaves the full smoke puff unchanged (its step is 1/80 s) and holds
+`blend_factor`), a rate per second that leaves the full smoke puff unchanged to within float rounding (its step is 1/80 s) and holds
 when slice 2's CFL cap changes step counts.
 
 Check on CPU at the 48-cell grid: the 16-frame preview matches every fourth frame of a 64-frame run at the

@@ -15,7 +15,8 @@ BOX = 1
 
 # Coverage is how far a cell moves toward the emitter's temperature and velocity over this much time, so
 # the blend is a rate per second and does not depend on the step length. It equals the full-run step of
-# recipes/smoke_puff.toml (2.4 s, 64 frames, 3 substeps), whose approved look it therefore keeps.
+# recipes/smoke_puff.toml (2.4 s, 64 frames, 3 substeps), whose approved look it therefore keeps to within
+# float rounding.
 BLEND_REFERENCE_S = wp.constant(1.0 / 80.0)
 
 
