@@ -26,5 +26,5 @@ def _configure_warp() -> None:
     # itself only gathers, so this is a safety net. Backward passes are never used.
     wp.config.deterministic = wp.DeterministicMode.RUN_TO_RUN
     wp.config.enable_backward = False
-    wp.config.quiet = True
+    wp.config.log_level = wp.LOG_WARNING  # no banner or module-load lines on stdout
     wp.init()

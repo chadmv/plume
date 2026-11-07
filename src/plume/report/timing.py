@@ -12,11 +12,16 @@ class StageTimer:
 
     @contextmanager
     def stage(self, name: str):
+        self.seconds.setdefault(name, 0.0)
         start = time.perf_counter()
         try:
             yield
         finally:
-            self.seconds[name] = self.seconds.get(name, 0.0) + time.perf_counter() - start
+            self.seconds[name] += time.perf_counter() - start
+
+    def exclude(self, outer: str, inner: str) -> None:
+        """Removes a nested stage's time from the stage that contained it, so stages never overlap."""
+        self.seconds[outer] -= self.seconds.get(inner, 0.0)
 
     def total(self) -> float:
         return sum(self.seconds.values())

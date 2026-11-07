@@ -6,6 +6,9 @@ from pathlib import Path
 
 from plume import tool_label
 from plume.recipe.errors import RecipeError
+from plume.sheet.assemble import GutterError
+from plume.sheet.crop import NothingVisibleError
+from plume.sim.device import DeviceError
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -33,6 +36,9 @@ def main(argv: list[str] | None = None) -> int:
     except RecipeError as error:
         print(f"recipe error: {error}", file=sys.stderr)
         return EXIT_RECIPE_ERROR
+    except (DeviceError, NothingVisibleError, GutterError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return EXIT_FAILED
 
 
 def _parser() -> argparse.ArgumentParser:
