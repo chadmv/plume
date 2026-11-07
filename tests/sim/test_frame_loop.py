@@ -32,13 +32,15 @@ def test_hot_puff_rises(cpu_device):
 
 def test_smoke_is_nearly_conserved_in_a_closed_box_without_dissipation(cpu_device):
     # Semi-Lagrangian schemes are not conservative: a sharp 4-cell puff rolling into a vortex loses about
-    # 11 percent over 40 steps here (plain semi-Lagrangian about 8). The bound guards against leaks.
+    # 11 percent over 40 steps here (plain semi-Lagrangian about 8). The smoke budget (sim/conserve.py)
+    # stops gains, not this loss. The bound guards against leaks.
     recipe = tiny_recipe(domain={"size_m": [1.2, 1.2, 1.2], "cell_m": 0.05, **CLOSED},
                          emitter=[{"name": "puff", "center_m": [0.0, 0.4, 0.0], "radius_m": 0.2,
                                    "end_s": 0.05, "smoke_per_s": 5.0, "temperature_k": 320.0}],
                          time={"duration_s": 2.0, "frames": 8, "substeps": 5})
     totals = run_and_collect(recipe, lambda grid: float(grid.smoke.data.numpy().sum()))
     assert totals[-1] == pytest.approx(totals[0], rel=0.15)
+    assert totals[-1] <= totals[0] * (1 + 1e-5)  # never gains
 
 
 def test_cooling_relaxes_temperature_toward_ambient(cpu_device):

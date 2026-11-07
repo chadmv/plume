@@ -9,9 +9,10 @@ import warp as wp
 from plume import tool_label
 from plume.cli.summary import print_summary
 from plume.recipe.derived import Derived, derive
-from plume.recipe.load import load_recipe
+from plume.recipe.load import load_recipe_with_origin
 from plume.recipe.schema import Recipe
 from plume.recipe.serialize import recipe_to_toml
+from plume.recipe.variation import RecipeOrigin
 from plume.render.camera import DomainView, make_camera, make_domain_view
 from plume.render.frame_renderer import FrameRenderer
 from plume.report.channels import channel_strip
@@ -22,7 +23,7 @@ from plume.sheet.assemble import AssembledFrames, assemble
 from plume.sheet.pack import pack, write_png
 from plume.sheet.sheet_json import SheetInfo, sheet_json_text, source_path
 from plume.sim.device import init_device
-from plume.sim.run import simulate
+from plume.sim.run import StepLog, simulate
 
 
 @dataclass(frozen=True)
@@ -35,35 +36,37 @@ class RunResult:
     assembled: AssembledFrames
     numbers: str
     timer: StageTimer
+    steps: StepLog
 
 
-def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, command: str) -> RunResult:
+def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, command: str,
+               sets: tuple[str, ...] = ()) -> RunResult:
     """Runs a recipe end to end, writes every output, prints the summary, and returns what it wrote."""
     timer = StageTimer()
     with timer.stage("load"):
-        recipe = load_recipe(recipe_path, preview=preview)
+        recipe, origin = load_recipe_with_origin(recipe_path, preview=preview, sets=sets)
         derived = derive(recipe)
         device_name = init_device(device)
     view = make_domain_view(make_camera(recipe.camera.elevation_deg, recipe.camera.azimuth_deg),
                             derived.domain_min_m, derived.size_m, recipe.domain.cell_m, recipe.render.px_per_cell)
-    raw_frames = _simulate_and_capture(recipe, derived, device_name, view, timer)
+    raw_frames, steps = _simulate_and_capture(recipe, derived, device_name, view, timer)
     with timer.stage("assemble"):
         assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px,
                              recipe.render.soften_px, recipe.render.crop_margin)
     with timer.stage("report"):
         out_dir = _out_dir(recipe, out, preview)
         files, numbers = _write_outputs(out_dir, recipe, derived, device_name, assembled,
-                                        source_path(recipe_path), command)
+                                        source_path(recipe_path), command, origin, steps)
     timer_path = out_dir / "timing.txt"
     timer_path.write_text(timer.text(), newline="\n")
     files["timing"] = timer_path
-    result = RunResult(out_dir, files, recipe, derived, device_name, assembled, numbers, timer)
+    result = RunResult(out_dir, files, recipe, derived, device_name, assembled, numbers, timer, steps)
     print_summary(result)
     return result
 
 
 def _simulate_and_capture(recipe: Recipe, derived: Derived, device: str, view: DomainView,
-                          timer: StageTimer) -> list[np.ndarray]:
+                          timer: StageTimer) -> tuple[list[np.ndarray], StepLog]:
     renderer = FrameRenderer(view, recipe.render, derived.cells, device)
     raw_frames = []
 
@@ -73,10 +76,16 @@ def _simulate_and_capture(recipe: Recipe, derived: Derived, device: str, view: D
             raw_frames.append(renderer.render(grid))
 
     with timer.stage("simulate"):
-        simulate(recipe, derived, device, capture)
+        steps = simulate(recipe, derived, device, capture)
         wp.synchronize_device(device)
     timer.exclude("simulate", "render")
-    return raw_frames
+    return raw_frames, steps
+
+
+def _step_facts(steps: StepLog) -> dict:
+    """The steps the CFL cap chose, for the settings log (D10)."""
+    return {"warmup_steps_run": steps.warmup_steps, "steps_per_frame": list(steps.steps_per_frame),
+            "total_steps": steps.total_steps}
 
 
 def _seat_point(recipe: Recipe) -> np.ndarray:
@@ -92,7 +101,8 @@ def _out_dir(recipe: Recipe, out: str | None, preview: bool) -> Path:
 
 
 def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str, assembled: AssembledFrames,
-                   source: str, command: str) -> tuple[dict[str, Path], str]:
+                   source: str, command: str, origin: RecipeOrigin,
+                   steps: StepLog) -> tuple[dict[str, Path], str]:
     name = recipe.output.name
     columns = recipe.output.columns
     files = {
@@ -119,5 +129,5 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
                      fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor)
     numbers = numbers_text(measure(frames, derived.fps), facts)
     files["numbers"].write_text(numbers, newline="\n")
-    files["settings"].write_text(recipe_to_toml(recipe, derived, device), newline="\n")
+    files["settings"].write_text(recipe_to_toml(recipe, derived, device, origin, _step_facts(steps)), newline="\n")
     return files, numbers

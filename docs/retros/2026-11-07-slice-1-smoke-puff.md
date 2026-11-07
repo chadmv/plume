@@ -105,7 +105,7 @@ measurements are now stored so a later change that alters it fails a test.
 ## Recommended Backlog Items
 
 - See [`idea-2026-11-07-rising-effects-fill-half-frames`](../backlog/idea-2026-11-07-rising-effects-fill-half-frames.md) - Rising effects fill only about half their frames
-- See [`idea-2026-11-07-advection-loses-small-puff-smoke`](../backlog/idea-2026-11-07-advection-loses-small-puff-smoke.md) - Advection loses about 10 percent of a small puff's smoke
+- See [`idea-2026-11-07-advection-loses-small-puff-smoke`](../backlog/closed/idea-2026-11-07-advection-loses-small-puff-smoke.md) - Advection loses about 10 percent of a small puff's smoke
 - See [`idea-2026-11-07-light-smoke-neutral-contact-sheet`](../backlog/idea-2026-11-07-light-smoke-neutral-contact-sheet.md) - Light smoke barely shows on the neutral contact sheet
 - See [`feature-2026-11-07-seat-point-meters`](../backlog/feature-2026-11-07-seat-point-meters.md) - A seat given as a point in meters
 

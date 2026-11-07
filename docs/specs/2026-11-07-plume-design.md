@@ -265,6 +265,7 @@ is generated from it (D33).
   `../` in it could write outside the output folder).
 - Advection loses some smoke: a small, sharp puff loses about 10 percent over 40 steps (plain
   semi-Lagrangian about 7). The projection leaves almost no divergence, so this is the scheme, not a leak.
+  (Slice 2 found the real puff gains smoke instead and added a smoke budget; see section 13.)
 - Measured at the close of slice 1, wall clock with kernels cached: the smoke puff preview takes about
   2.5 s on the 2080 Ti and 10 s on CPU (Windows); the full sheet (80 x 100 x 80 cells, 64 frames at
   256 px) about 6.5 s on the 2080 Ti. Runs measured earlier, during tuning, were slower (about 5, 13 and
@@ -278,3 +279,35 @@ is generated from it (D33).
 - **The 2080 Ti is Warp's minimum GPU** (sm_75). Mitigated by the exact pin (D2).
 - **Look tuning is open-ended.** Every slice ends with the user's look review of its example recipe; numbers
   catch regressions, eyes judge the look.
+
+## 13. Changes while building slice 2
+
+- **Pressure** (3.2 step 4): geometric multigrid is the default (`solver.pressure_solver = "multigrid"`,
+  2 V-cycles with 2 red-black sweeps a side); Gauss-Seidel stays available. Coarse levels are cell-centered
+  finite volumes that weigh cells overhanging an odd-sized axis by the share inside the domain, and hold
+  open-face pressure 0 where the simulation grid does. The coarsest level's sweeps grow with its longest
+  axis, for tall, thin domains. Measurements are in `tests/sim/test_multigrid.py`.
+- **Forces** (3.2 step 2), in this order after buoyancy: vorticity confinement
+  (`forces.vorticity_confinement`, 1/s, push `strength * cell_m * (N x curl)`), curl-noise turbulence
+  (`[forces.turbulence]`: `scale_m`, `strength_mps2`, `speed_mps`; a discrete curl of a time-blended
+  value-noise potential, divergence-free on the grid), and drag toward the wind (`forces.wind_mps`,
+  `forces.drag_per_s`; wind without drag is a recipe error). Turbulence pushes all the air, so it needs
+  some drag to stay bounded.
+- **CFL cap** (D10): time runs in blocks of one frame (warmup in blocks of the same base step count). Before
+  each block the fastest speed (grid faces, reduced on the host, and active emitters) sets the step count,
+  at least `time.substeps`, so the gas crosses at most `solver.max_cells_per_step` cells per step; past
+  `solver.max_substeps` the run stops with exit code 2. When the cap does not bind, steps land exactly where
+  slice 1's did. The counts go to `settings.toml` `[resolved]` (`steps_per_frame`, `total_steps`,
+  `warmup_steps_run`) and the stdout summary.
+- **Smoke budget** (3.2 step 5, closing the advection backlog item): clamped MacCormack gained smoke on
+  the real puff (30 percent over 2.4 s with no dissipation; 68 to 109 percent with turbulence, more on the
+  preview grid), so after each smoke advection the field is scaled by one number to hold its total between
+  the plain semi-Lagrangian pass's total and the total before the step: advection never creates smoke,
+  and smoke leaving through open faces counts the way the scheme carries it. (An outflow estimate was
+  tried first and drained smoke still inside the domain.) Totals come from deterministic line sums added
+  in numpy float64. Temperature and velocity are not rescaled.
+- **Variations** (D23, D27): `extends` names a parent relative to the recipe (no absolute paths, `.toml`
+  only, chains allowed, loops rejected); tables merge key by key, anything else (the `[[emitter]]` list
+  included) replaces. `--set key=value` on `run` and `check` applies after `extends`, reads the value as
+  TOML or else as text, and names emitters by name or index. `settings.toml` has `extends = ""` and
+  records `extends_chain` and `sets` under `[resolved]`, so it reruns as is.

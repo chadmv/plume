@@ -24,8 +24,29 @@ whenever a run teaches something.
 - **A hot puff becomes a flat dome or a jellyfish.** Buoyant puffs roll up into a vortex ring. Less heat
   above ambient and a slower launch keep it rounder. Turbulence and vorticity confinement (slice 2) add
   billows.
-- **A puff loses some smoke even with no dissipation.** Semi-Lagrangian advection is not conservative:
-  a small, sharp puff loses about 10 percent over 40 steps. Larger, softer puffs lose less.
+- **Smooth and blobby, no billows.** Add `forces.vorticity_confinement` (about 2 to 3 for a 0.3 m puff)
+  to keep the curls the grid smears, and `forces.turbulence` with `scale_m` about half the puff's radius
+  and a small `strength_mps2` (0.2 to 0.4) to break the surface up. Swirls bigger than the puff
+  (`scale_m` near its size) shove the whole puff sideways instead of breaking it up.
+- **Turbulence runs away or the CFL cap adds many steps.** Turbulence pushes all the air, not just the
+  smoke, so without drag it keeps accelerating; the fastest swirl settles near a few times
+  `strength_mps2 / drag_per_s` (the push peaks at about 3.4 times the strength). Give it some
+  `forces.drag_per_s` (0.2 to 0.5). Drag also slows the buoyant rise, so a little goes a long way. The
+  stdout `steps` line says how many steps the CFL cap added.
+- **Strong confinement tears smoke into streaks.** Confinement feeds on the spin it creates; above about 4
+  for a 0.3 m puff it shreds the smoke into thin strands.
+- **Smoke never grows on its own.** Since slice 2 advection never adds smoke (before, clamped MacCormack
+  added up to a third more over a puff's life, and doubled it with turbulence), so
+  `dissipation.smoke_per_s` and open faces set how fast a puff fades. A small, sharp puff still loses a
+  little to the scheme's blur.
+
+## Iterating
+
+- **Try a value without editing the recipe.** `plume run recipe.toml --preview --set forces.drag_per_s=0.4`
+  changes one value for one run; `settings.toml` records the change under `[resolved] sets`. Name an
+  emitter's keys by name (`emitter.puff.radius_m=0.4`) or index (`emitter[0].radius_m=0.4`).
+- **Variations of one effect.** A recipe can start with `extends = "base.toml"` and give only what
+  differs; tables merge key by key, and an `[[emitter]]` list replaces the parent's whole list.
 
 ## Density and color
 

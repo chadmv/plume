@@ -1,26 +1,33 @@
-"""Loading a recipe: parse the TOML, build and check it, apply --preview, then fill dependent defaults.
+"""Loading a recipe: parse the TOML, merge its `extends` parents, apply `--set`, build and check it,
+apply --preview, then fill dependent defaults.
 
-The four steps run in that order because each needs the previous one's result: preview changes the frame
-count that the default column count depends on.
+The steps run in that order because each needs the previous one's result: `--set` may change a value a
+parent gave, and preview changes the frame count that the default column count depends on.
 """
 
 import dataclasses
 import math
-import tomllib
 from pathlib import Path
 
 from plume.recipe.build import build
-from plume.recipe.errors import RecipeError
 from plume.recipe.rules import check_output_name, check_rules
 from plume.recipe.schema import Recipe
+from plume.recipe.variation import RecipeOrigin, apply_sets, read_toml, resolve_extends
 
 
-def load_recipe(path: Path, preview: bool = False) -> Recipe:
+def load_recipe(path: Path, preview: bool = False, sets: tuple[str, ...] = ()) -> Recipe:
     """Reads the recipe at `path` and returns it fully resolved."""
-    recipe = parse_recipe(_read_toml(path))
+    return load_recipe_with_origin(path, preview, sets)[0]
+
+
+def load_recipe_with_origin(path: Path, preview: bool = False,
+                            sets: tuple[str, ...] = ()) -> tuple[Recipe, RecipeOrigin]:
+    """The fully resolved recipe at `path`, and the parents and overrides that shaped it."""
+    table, chain = resolve_extends(read_toml(path), path)
+    recipe = parse_recipe(apply_sets(table, tuple(sets)))
     if preview:
         recipe = apply_preview(recipe)
-    return fill_dependent_defaults(recipe, path.stem)
+    return fill_dependent_defaults(recipe, path.stem), RecipeOrigin(extends_chain=chain, sets=tuple(sets))
 
 
 def parse_recipe(table: dict) -> Recipe:
@@ -72,13 +79,3 @@ def fill_dependent_defaults(recipe: Recipe, recipe_stem: str) -> Recipe:
         camera=dataclasses.replace(recipe.camera, seat=recipe.camera.seat or emitters[0].name),
         output=dataclasses.replace(output, name=output.name or recipe_stem, columns=columns),
     )
-
-
-def _read_toml(path: Path) -> dict:
-    try:
-        with path.open("rb") as file:
-            return tomllib.load(file)
-    except FileNotFoundError:
-        raise RecipeError(f"recipe not found: {path}") from None
-    except tomllib.TOMLDecodeError as error:
-        raise RecipeError(f"{path} is not valid TOML: {error}") from None

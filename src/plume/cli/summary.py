@@ -21,6 +21,9 @@ def print_summary(result: "RunResult") -> None:
     print(f"sheet    {columns} x {rows} frames of {recipe.output.frame_px} px, {recipe.time.frames} frames "
           f"at {result.derived.fps:.3f} fps")
     print(f"grid     {nx} x {ny} x {nz} cells of {recipe.domain.cell_m:.4f} m on {result.device}")
+    steps = result.steps
+    print(f"steps    {steps.total_steps} ({steps.added_steps} added by the CFL cap, most in one frame "
+          f"{max(steps.steps_per_frame)})")
     print(f"time     {result.timer.total():.2f} s ({_stage_list(result.timer.seconds)})")
     print(f"numbers  peak_frame {summary['peak_frame']}, fade_frame {summary['fade_frame']}, "
           f"frame_m {result.assembled.frame_m:.4f}, seat ({result.assembled.seat[0]:.3f}, "

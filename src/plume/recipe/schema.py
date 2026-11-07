@@ -82,11 +82,26 @@ class EmitterSettings:
 
 
 @dataclass(frozen=True, kw_only=True)
+class TurbulenceSettings:
+    scale_m: float = setting(0.3, "m", "Size of the swirls.")
+    strength_mps2: float = setting(0.0, "m/s^2", "Acceleration of the swirling push; 0 for none.")
+    speed_mps: float = setting(0.2, "m/s", "How fast the swirl pattern changes: it renews every "
+                                           "`scale_m / speed_mps` seconds; 0 freezes it.")
+
+
+@dataclass(frozen=True, kw_only=True)
 class ForceSettings:
     gravity_mps2: float = setting(9.81, "m/s^2", "Strength of gravity.")
     heat_buoyancy: float = setting(1.0, "", "Lift from heat; 1 is ideal-gas buoyancy.")
     smoke_weight: float = setting(0.0, "", "Sink from smoke density, as a fraction of gravity per unit "
                                            "density.")
+    wind_mps: Vec3 = setting((0.0, 0.0, 0.0), "m/s", "Velocity of the surrounding air; drag pulls the gas "
+                                                     "toward it, so it needs `drag_per_s`.")
+    drag_per_s: float = setting(0.0, "1/s", "Rate the gas's velocity relaxes toward `wind_mps`; 0 for none.")
+    vorticity_confinement: float = setting(0.0, "1/s", "Strength of the push that keeps small swirls alive "
+                                                       "(Fedkiw 2001), scaled by the cell size so previews "
+                                                       "keep their swirl; 0 for none.")
+    turbulence: TurbulenceSettings = section("Seeded curl-noise swirls, in meters, so previews match.")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -97,7 +112,20 @@ class DissipationSettings:
 
 @dataclass(frozen=True, kw_only=True)
 class SolverSettings:
-    pressure_iterations: int = setting(60, "", "Red-black Gauss-Seidel sweeps per pressure solve.")
+    pressure_solver: str = setting("multigrid", "", "How the pressure is solved: `multigrid` (fixed V-cycles) or "
+                                                    "`gauss_seidel` (slice 1's fixed sweeps).",
+                                   ("multigrid", "gauss_seidel"))
+    pressure_iterations: int = setting(60, "", "Red-black Gauss-Seidel sweeps per pressure solve, for "
+                                               "`gauss_seidel`.")
+    multigrid_cycles: int = setting(2, "", "Multigrid V-cycles per pressure solve.")
+    multigrid_sweeps: int = setting(2, "", "Smoothing sweeps before and after each multigrid level's "
+                                           "correction.")
+    max_cells_per_step: float = setting(1.0, "cells", "CFL cap: the fastest gas, measured at the start of "
+                                                      "each frame, may cross at most this many cells in one "
+                                                      "step; frames that would go further get more, shorter "
+                                                      "steps.")
+    max_substeps: int = setting(32, "", "Most steps the CFL cap may give one frame; a frame that needs more "
+                                        "stops the run with an error.")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -157,6 +185,9 @@ class LookSettings:
 
 @dataclass(frozen=True, kw_only=True)
 class Recipe:
+    extends: str = setting("", "", "Parent recipe this one builds on, as a path relative to this file. Tables "
+                                   "merge key by key; any other value, `[[emitter]]` included, replaces the "
+                                   "parent's. Empty in a resolved recipe.")
     seed: int = setting(0, "", "Seed for every random choice in the run.")
     domain: DomainSettings = section("The simulation box.")
     time: TimeSettings = section("Effect time and frames.")
