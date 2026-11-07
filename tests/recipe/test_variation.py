@@ -139,6 +139,7 @@ def test_set_of_an_unknown_key_names_the_closest(tmp_path):
     ("emitter[3].radius_m=1", r"emitter\[3\] does not exist"),
     ("emitter.puff=1", "name the emitter"),
     ("seed.x=1", "is a value, not a table"),
+    ("extends=other.toml", "cannot change extends"),
 ])
 def test_malformed_sets_fail(tmp_path, item, message):
     path = write(tmp_path, "base.toml", PARENT)

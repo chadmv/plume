@@ -9,6 +9,10 @@
   cubed and 1.9 to 2.0 at 80 x 100 x 80; 2 V-cycles leave 0.010 to 0.054 and 0.012 (closed) to 0.21
   (open). On 16 cubed with
   open faces Gauss-Seidel is better (0.001 against 0.015): the grid is too small for long waves.
+- Tall, thin domains stop coarsening at 2 cells across while still long (6 x 128 x 6 ends at 2 x 32 x 2), so
+  the coarsest sweeps grow with its longest axis: 2 V-cycles left 0.51 of a closed jet with a flat 20
+  sweeps, 0.08 with 4 per cell (6 x 128 x 6) and 0.008 (8 x 96 x 8).
+- Smoke puff preview on CPU (cloud session, 4 cores): slice 1's Gauss-Seidel 11.7 s, multigrid 8.3 s.
 - One smoothing sweep a side diverged next to open faces (38 x 48 x 38, 3 cycles: 0.34), hence the rule
   `multigrid_sweeps >= 2`.
 """
@@ -66,7 +70,9 @@ def test_each_cycle_shrinks_the_residual_on_an_odd_grid(cpu_device, faces):
         multigrid(grid)
         residuals.append(poisson_residual(multigrid))
     assert residuals[-1] < 0.01
-    assert all(later < 0.5 * earlier for earlier, later in zip(residuals[1:], residuals[2:]))
+    # Every cycle after the first at least halves it (measured about 0.2 a cycle); the first cycle with
+    # open faces only reaches about 0.9 of the start, because the cold start's error sits at the faces.
+    assert all(later < 0.5 * earlier for earlier, later in zip(residuals, residuals[1:]))
 
 
 def test_levels_halve_down_to_a_few_cells(cpu_device):
@@ -97,3 +103,11 @@ def test_same_input_gives_identical_pressure(cpu_device):
 def _multigrid_left(cells, faces):
     grid = jet_grid(cells, faces)
     return divergence_left(grid, Multigrid(grid, 2, 2))
+
+
+def test_a_tall_thin_domain_converges(cpu_device):
+    assert divergence_left(jet_grid((6, 96, 6), ALL_CLOSED), _two_cycles) < 0.1
+
+
+def _two_cycles(grid):
+    Multigrid(grid, 2, 2)(grid)

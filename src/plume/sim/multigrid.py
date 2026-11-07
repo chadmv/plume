@@ -24,8 +24,11 @@ from plume.sim.sample import sample_index_space
 # Stop coarsening once any axis is this short, or after this many levels.
 MIN_LEVEL_CELLS = 2
 MAX_LEVELS = 8
-# The coarsest level is small, so a fixed number of over-relaxed sweeps solves it well.
+# The coarsest level is small, so a fixed number of over-relaxed sweeps solves it well. Coarsening stops
+# when the shortest axis is short, so on a tall, thin domain the coarsest level can still be long (2 x 32 x
+# 2); sweeps grow with its longest axis so long waves along it still settle.
 COARSEST_SWEEPS = 20
+COARSEST_SWEEPS_PER_CELL = 4
 COARSEST_RELAXATION = 1.5
 SMOOTHING_RELAXATION = 1.0
 
@@ -127,7 +130,8 @@ class Multigrid:
     def _v_cycle(self, index: int) -> None:
         level = self.levels[index]
         if index == len(self.levels) - 1:
-            red_black_sweeps(level.q, level.rhs, level.info, level.cells, self.device, COARSEST_SWEEPS,
+            sweeps = max(COARSEST_SWEEPS, COARSEST_SWEEPS_PER_CELL * max(level.cells))
+            red_black_sweeps(level.q, level.rhs, level.info, level.cells, self.device, sweeps,
                              COARSEST_RELAXATION)
             return
         red_black_sweeps(level.q, level.rhs, level.info, level.cells, self.device, self.sweeps,

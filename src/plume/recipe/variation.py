@@ -96,6 +96,9 @@ def apply_sets(table: dict, sets: tuple[str, ...]) -> dict:
     result = copy.deepcopy(table)
     for item in sets:
         key, value = _split_set(item)
+        if key == "extends":
+            raise RecipeError("--set cannot change extends; parents are merged before --set applies. Write "
+                              "extends in the recipe instead")
         _set_value(result, key, _parse_value(value), item)
     return result
 
