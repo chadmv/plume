@@ -33,5 +33,9 @@ whenever a run teaches something.
   `emitter.smoke_per_s` adds more smoke.
 - **The heat channel is black.** Gas only glows above `render.glow_start_k` (600 K by default); a warm puff
   below it has no heat, which is right for plain smoke.
+- **Choosing smoke and fire colors.** Sample `look.smoke_ramp` and `look.emission_ramp` colors from the
+  art reference (`F:\petri\docs\art-direction\reference\fireball-impact-meadow.png`) instead of guessing,
+  and check both contact sheets before calling a look done: a guessed light gray vanished on the neutral
+  sheet and the next guess read pink on grass.
 - **Smoke barely shows on `contact_neutral.png`.** The default smoke color is a light warm gray close to
   the neutral background; judge on `contact_grass.png`, or change `look.smoke_ramp` (preview only).

@@ -45,6 +45,8 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
   sheet,report}`); tests mirror `src/` under `tests/`; shared test helpers live in `tests/support/`.
 - The recipe schema (`src/plume/recipe/schema.py`) is the single source for keys, units, defaults and
   meanings. Add a key there and regenerate the reference.
+- A recipe value that becomes part of a file path is checked as a plain name in `recipe/rules.py` at load
+  time (as `check_output_name` does), with a test that rejects `../`.
 - Determinism: kernels only gather (each thread writes only its own cell); fixed iteration counts; all
   randomness from the recipe seed through `sim/noise.py`; host reductions in numpy. Warp runs in
   run-to-run deterministic mode (`sim/device.py`).
@@ -61,5 +63,6 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
 - `docs/backlog/`: deferred work, one file per item. `docs/look-tuning.md`, `docs/recipe-reference.md`.
 - `recipes/`: example and test recipes. Game recipes live in Petri beside the effects that use them.
 - `tests/golden/`: the `numbers.txt` of each approved preview; a test reruns the preview on CPU and
-  compares within tolerance. After the user approves a changed look, copy the new preview's
-  `numbers.txt` over the golden file.
+  compares within tolerance. After the user approves a changed look, rerun the committed recipe's
+  preview into a fresh folder (`--out` a new directory) and copy that `numbers.txt` over the golden file;
+  never copy from `out/`, which can hold a run of an older recipe.
