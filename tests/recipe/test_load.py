@@ -4,7 +4,7 @@ import pytest
 
 from plume.recipe.derived import derive
 from plume.recipe.errors import RecipeError
-from plume.recipe.load import load_recipe, parse_recipe
+from plume.recipe.load import load_recipe, parse_recipe, preview_substeps
 from plume.recipe.serialize import recipe_to_toml
 
 MINIMAL = """
@@ -100,6 +100,20 @@ def test_preview_coarsens_the_longest_axis_to_48_cells(tmp_path):
     assert recipe.output.frame_px == 128
     assert recipe.output.columns == 4
     assert derived.fps == pytest.approx(5.0)
+
+
+def test_preview_keeps_the_full_run_step_length(tmp_path):
+    full = derive(load_recipe(write(tmp_path, MINIMAL)))
+    preview = derive(load_recipe(write(tmp_path, MINIMAL), preview=True))
+    assert preview.steps_per_frame == 12  # 64 frames x 3 substeps spread over 16 frames
+    assert preview.dt_s == pytest.approx(full.dt_s)
+    assert preview.warmup_steps == full.warmup_steps
+
+
+def test_preview_substeps_round_up_so_steps_are_never_longer():
+    assert preview_substeps(frames=64, substeps=3, preview_frames=16) == 12
+    assert preview_substeps(frames=50, substeps=3, preview_frames=16) == 10  # 9.375 rounds up
+    assert preview_substeps(frames=8, substeps=1, preview_frames=16) == 1  # never below one
 
 
 def test_settings_toml_loads_back_to_the_same_recipe(tmp_path):

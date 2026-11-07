@@ -40,7 +40,7 @@ One run is four steps, each producing what the next needs:
 ### 3.2 One substep, in order
 
 `dt = 1 / (fps * substeps)` where `fps = frames / duration_s` (D25). From slice 2 a CFL cap may add
-substeps (D10).
+substeps (D10). `--preview` raises `substeps` so `dt` stays the full run's (section 7).
 
 1. **Emit.** Each active emitter blends smoke, temperature and velocity into the cells it covers (3.3).
 2. **Forces.** Vertical acceleration `gravity_mps2 * (heat_buoyancy * (T - ambient_k) / ambient_k -
@@ -66,7 +66,10 @@ so the last frame lands at the end of the duration and the first already shows t
   shape (smoothstep), times a breakup factor `1 + strength * noise(position / scale_m)`, clamped at 0.
 - While `start_s <= t < end_s`: smoke grows by `smoke_per_s * coverage * dt`; temperature moves toward
   `temperature_k` by `coverage`; velocity moves toward `velocity_mps` (or, with `velocity_mode =
-  "outward"`, that speed away from the center) by `coverage`.
+  "outward"`, that speed away from the center) by `coverage`. `coverage` is the blend per 1/80 s (the full
+  smoke puff's step), compounded to the step: one step moves `1 - (1 - coverage) ** (dt * 80)` of the
+  way, so the blend is a rate per second and halving `dt` does not change it. Full coverage holds the
+  value exactly.
 - Noise is a value-noise lattice whose lattice values come from a counter-based integer hash of
   `(seed, emitter index, lattice cell)`. No other source of randomness exists.
 
@@ -198,7 +201,9 @@ frame  time_s  coverage  left    top     right   bottom  mean_heat  mean_thick  
 - Exit codes: 0 success, 2 recipe error (message names the key and, for unknown keys, the closest valid
   one), 1 anything else.
 - `--preview` (D30): cells coarsened so the longest axis has `preview.longest_axis_cells` (48), `frames =
-  preview.frames` (16), `frame_px = preview.frame_px` (128), same duration.
+  preview.frames` (16), `frame_px = preview.frame_px` (128), same duration. `substeps` becomes
+  `ceil(frames * substeps / preview.frames)` (12 for the defaults), so a preview step is as long in
+  seconds as a full run's and the preview is a coarse version of the final look, not a faster-clocked one.
 
 ## 8. The recipe, slice 1 keys
 

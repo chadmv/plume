@@ -13,6 +13,12 @@ from plume.sim.noise import value_noise
 SPHERE = 0
 BOX = 1
 
+# Coverage is how far a cell moves toward the emitter's temperature and velocity over this much time, so
+# the blend is a rate per second and does not depend on the step length. It equals the full-run step of
+# recipes/smoke_puff.toml (2.4 s, 64 frames, 3 substeps), whose approved look it therefore keeps to within
+# float rounding.
+BLEND_REFERENCE_S = wp.constant(1.0 / 80.0)
+
 
 @wp.struct
 class EmitterParams:
@@ -62,6 +68,16 @@ def coverage(e: EmitterParams, x: wp.vec3, seed: int) -> float:
 
 
 @wp.func
+def blend_factor(amount: float, dt: float) -> float:
+    """The fraction of the way to the emitter's value a cell moves in one step of length `dt`.
+
+    `amount` is the fraction per BLEND_REFERENCE_S; compounding it as (1 - amount) ** (dt / reference) makes
+    two half-length steps land where one full-length step does. Full coverage always gives 1.
+    """
+    return 1.0 - wp.pow(1.0 - amount, dt / BLEND_REFERENCE_S)
+
+
+@wp.func
 def is_active(e: EmitterParams, time_s: float) -> bool:
     return time_s >= e.start_s and time_s < e.end_s
 
@@ -83,12 +99,13 @@ def emit_scalars_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(
             amount = coverage(e, x, seed)
             if amount > 0.0:
                 smoke[i, j, k] = smoke[i, j, k] + e.smoke_per_s * amount * dt
-                temperature[i, j, k] = wp.lerp(temperature[i, j, k], e.temperature_k, amount)
+                temperature[i, j, k] = wp.lerp(temperature[i, j, k], e.temperature_k, blend_factor(amount, dt))
 
 
 @wp.kernel
 def emit_velocity_kernel(component: wp.array3d(dtype=float), axis: int, offset: wp.vec3,
-                         emitters: wp.array(dtype=EmitterParams), info: GridInfo, seed: int, time_s: float):
+                         emitters: wp.array(dtype=EmitterParams), info: GridInfo, seed: int, time_s: float,
+                         dt: float):
     i, j, k = wp.tid()
     x = world_position(info, wp.vec3(float(i), float(j), float(k)) + offset)
     for n in range(emitters.shape[0]):
@@ -101,7 +118,7 @@ def emit_velocity_kernel(component: wp.array3d(dtype=float), axis: int, offset: 
                     away = x - e.center_m
                     if wp.length(away) > 0.0:
                         target = wp.normalize(away) * wp.length(e.velocity_mps)
-                component[i, j, k] = wp.lerp(component[i, j, k], target[axis], amount)
+                component[i, j, k] = wp.lerp(component[i, j, k], target[axis], blend_factor(amount, dt))
 
 
 def emitter_params(emitters: tuple[EmitterSettings, ...], device: str) -> wp.array:
@@ -133,5 +150,5 @@ def emit(grid: Grid, emitters: wp.array, seed: int, time_s: float, dt: float) ->
               inputs=[grid.smoke.data, grid.temperature.data, emitters, grid.info, seed, time_s, dt])
     for axis, (field, offset) in enumerate(zip(grid.velocity_fields(), (U_FACE, V_FACE, W_FACE))):
         wp.launch(emit_velocity_kernel, dim=field.data.shape, device=grid.device,
-                  inputs=[field.data, axis, offset, emitters, grid.info, seed, time_s])
+                  inputs=[field.data, axis, offset, emitters, grid.info, seed, time_s, dt])
 
