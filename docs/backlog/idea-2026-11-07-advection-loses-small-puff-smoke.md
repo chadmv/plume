@@ -22,3 +22,8 @@ the scheme, not a leak. The frame loop test was relaxed to 320 K with a 15 perce
 - `tests/sim/test_frame_loop.py`
 - `docs/specs/2026-11-07-plume-design.md` section 11
 - `docs/retros/2026-11-07-slice-1-smoke-puff.md`
+
+## Notes
+- 2026-11-07: the test comment in `tests/sim/test_frame_loop.py:34-35` now measures about 11 percent (plain
+  semi-Lagrangian about 8) at the test's 320 K; the 10 and 7 above and in the spec are the earlier
+  measurement. The 15 percent bound still holds.
