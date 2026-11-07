@@ -21,14 +21,24 @@ end of slice 6.
 
 ### Now
 - [Slice 2 - solver quality and iteration tools](docs/backlog/feature-2026-11-07-slice-2-solver-quality-iteration-tools.md) - the next slice in the D34 order and ready now; every later effect builds on its solver and its `extends` and `--set`
+- [Preview time steps are four times longer than the final run's](docs/backlog/bug-2026-11-07-preview-step-size-differs-from-final.md) - preview and final drift apart today, which undercuts slice 2's "preview and final look alike" review; fix it with slice 2's CFL cap
+- [Test that two identical GPU runs give identical bytes](docs/backlog/feature-2026-11-07-gpu-same-bytes-determinism-test.md) - quick win: lock in GPU same-bytes before slice 2 adds multigrid and vorticity kernels
 - [Advection loses about 10 percent of a small puff's smoke](docs/backlog/idea-2026-11-07-advection-loses-small-puff-smoke.md) - its own summary says to weigh it with slice 2's solver work; decide it while the solver is open
 - [Light smoke barely shows on the neutral contact sheet](docs/backlog/idea-2026-11-07-light-smoke-neutral-contact-sheet.md) - quick win: a darker neutral or a checker makes every smoke look review use both sheets
 
 ### Next
+- [source becomes an absolute path outside a git checkout](docs/backlog/bug-2026-11-07-source-path-absolute-outside-git.md) - quick win: breaks the standalone rule and the golden test outside a git checkout
+- [written_by carries machine-local paths and drops quoting](docs/backlog/bug-2026-11-07-written-by-machine-local-paths.md) - fix before Petri commits its first sheet JSON; pairs with the `source` fix
+- [Recipe mistakes pass plume check and fail late](docs/backlog/bug-2026-11-07-recipe-mistakes-pass-check-fail-late.md) - strict, early recipe errors keep the agent's iterate loop cheap; slice 2's `--set` adds more ways to pass bad values
+- [Rerunning a preview's settings.toml overwrites the full sheet](docs/backlog/bug-2026-11-07-preview-settings-rerun-overwrites-full-sheet.md) - a rerun of the logged settings should never destroy a full sheet
 - [A seat given as a point in meters](docs/backlog/feature-2026-11-07-seat-point-meters.md) - small and ready; slice 4's impact needs a ground point, so land it before that slice starts
 - [Rising effects fill only about half their frames](docs/backlog/idea-2026-11-07-rising-effects-fill-half-frames.md) - a sheet-contract decision; settle it before slice 3's fireball plume, which travels further than the puff
 
 ### Later
+- [Emitter noise breakup is frozen in time](docs/backlog/idea-2026-11-07-emitter-noise-breakup-frozen-in-time.md) - before slice 3: frozen breakup gives fire and smoke columns fixed streaks
+- [Tests for box emitters, noise breakup, warmup and open-face outflow](docs/backlog/feature-2026-11-07-tests-box-emitters-breakup-warmup-outflow.md) - covers emitter, warmup and boundary behavior the later slices lean on
+- [Guard the preview time budget in CI](docs/backlog/feature-2026-11-07-preview-time-budget-guard-ci.md) - catches preview slowdowns between slice 2 and slice 6
+- [Log the ratio of rendered crop pixels to frame pixels](docs/backlog/idea-2026-11-07-log-render-to-frame-pixel-ratio.md) - matters once slice 6 renders 512 px close-ups
 - [Slice 3 - combustion and the fireball plume](docs/backlog/feature-2026-11-07-slice-3-combustion-fireball-plume.md) - blocked by slice 2
 - [Slice 4 - keyframed and burst emitters, ground dust](docs/backlog/feature-2026-11-07-slice-4-burst-emitters-ground-dust.md) - blocked by slice 3
 - [Slice 5 - looping sheets](docs/backlog/feature-2026-11-07-slice-5-looping-sheets.md) - blocked by slice 4
@@ -36,52 +46,21 @@ end of slice 6.
 
 ## What moved
 
+**Refresh 2 (light)**
+- New: filed the ten gaps the deep review suggested; all are placed below.
+- New themes: Recipe and CLI robustness (recipe-cli) and Tests and CI (tests-ci), because the recipe,
+  path and test items fit no existing section.
+- Now gains the preview step-size bug (it undercuts slice 2's look review) and the GPU same-bytes test
+  (guard before new kernels). Next gains the `source`, `written_by`, recipe-check and settings-rerun bugs.
+- The Suggested backlog actions section is gone: every suggestion is filed, and the advection item's
+  numbers were updated.
+
 **Refresh 1 (deep)**
 - First run.
 - Filed the build plan's slices as items: an umbrella for the first version with one child per slice,
   chained in the D34 order. Slice 1 was filed as already closed so the umbrella's progress counts it.
 - A verify review found all ten open items still open against the code. A gaps review found ten
-  problems no item covers; they are listed below as suggestions, not filed.
-
-## Suggested backlog actions
-
-- File a test that two identical CUDA runs give identical bytes. The same-bytes test runs on CPU only
-  (`tests/cli/test_run.py:167-174`) and the one `gpu` test compares CPU against CUDA within a tolerance
-  (`tests/cli/test_cpu_gpu.py:54-66`); slice 2's new kernels are where GPU nondeterminism would appear.
-  `/backlog feature GPU same-bytes determinism test`
-- File strict recipe checks for values that pass `plume check` and fail late: `nan` and `inf` numbers
-  (`src/plume/recipe/build.py:66-69`; `duration_s = inf` crashes with a ZeroDivisionError), an emitter
-  centered outside the domain (`src/plume/recipe/rules.py:48-69`), seeds of 2^32 or more silently cut to
-  32 bits (`src/plume/sim/noise.py:27`), and argparse usage errors sharing exit code 2 with recipe errors
-  (`src/plume/cli/main.py:21`, `:36-40`). `/backlog bug Recipe mistakes pass check and fail late`
-- File: rerunning a preview's `settings.toml` writes a preview-sized sheet into the full-run folder and
-  sets `source` to the settings file (`src/plume/recipe/load.py:59`, `src/plume/cli/run.py:87-91`,
-  `src/plume/recipe/serialize.py:82-93`). `/backlog bug Preview settings.toml rerun overwrites full sheet`
-- File: outside a git checkout, `source` becomes an absolute path and the golden test fails
-  (`src/plume/sheet/sheet_json.py:245-251`, `tests/cli/test_golden_numbers.py:81-85`); this breaks the
-  standalone rule. `/backlog bug Source path absolute outside a git checkout`
-- File: `written_by` is `" ".join(["plume", *argv])` (`src/plume/cli/main.py:34`), so it loses quoting
-  and carries machine-local recipe paths into Petri's committed sheet JSON. `/backlog bug written_by
-  carries machine-local paths and drops quoting`
-- File: preview steps are four times longer than final steps because the step is `1 / (fps * substeps)`
-  and preview cuts frames from 64 to 16 (`src/plume/recipe/derived.py:29`); emitter blending is per step
-  (`src/plume/sim/emitters.py:86`, `:104`), so preview and final drift (peak frame and late thickness
-  measured about 20 percent apart). Belongs with slice 2's "preview and final look alike" goal.
-  `/backlog bug Preview step size differs from final run`
-- File: no check of crop pixels against frame pixels; the puff's crop is about 123 rendered px stretched
-  to 256 (`src/plume/render/camera.py:60`, `src/plume/sheet/resample.py:23`), which matters for slice 6's
-  512 px close-ups. `/backlog idea Log the render-to-frame pixel ratio`
-- File: emitter noise breakup has no time input and its stream is the emitter's index
-  (`src/plume/sim/emitters.py:59`, `:125`), so long-running emitters show frozen streaks and reordering
-  emitters changes the pattern. `/backlog idea Emitter noise breakup frozen in time`
-- File tests for box emitters, noise breakup at `scale_m`, `warmup_s` and outflow through an open face;
-  emitter tests cover spheres only (`tests/sim/test_emitters.py`). `/backlog feature Tests for box
-  emitters, breakup, warmup and outflow`
-- File a guard on the preview time budget: CI runs the CPU preview but never reads `timing.txt`
-  (`.github/workflows/ci.yml:19-20`). `/backlog feature Preview time budget guard in CI`
-- Update the advection item's numbers: the test comment now measures about 11 percent (plain
-  semi-Lagrangian about 8) at `tests/sim/test_frame_loop.py:34-35`, against 10 and 7 in the item and
-  spec. `/backlog` update of `idea-2026-11-07-advection-loses-small-puff-smoke`
+  problems no item covers; they were listed as suggestions, not filed.
 
 ## First version (first-version)
 
@@ -95,13 +74,31 @@ end of slice 6.
 
 ## Solver accuracy (solver-accuracy)
 
-1. [Advection loses about 10 percent of a small puff's smoke](docs/backlog/idea-2026-11-07-advection-loses-small-puff-smoke.md) (idea, -) - keeps density predictable while tuning; decide with slice 2's solver work
+1. [Preview time steps are four times longer than the final run's](docs/backlog/bug-2026-11-07-preview-step-size-differs-from-final.md) (bug, high) - preview must be a coarse version of the final look (D30); fix with slice 2's CFL cap
+2. [Advection loses about 10 percent of a small puff's smoke](docs/backlog/idea-2026-11-07-advection-loses-small-puff-smoke.md) (idea, -) - keeps density predictable while tuning; decide with slice 2's solver work
+3. [Emitter noise breakup is frozen in time](docs/backlog/idea-2026-11-07-emitter-noise-breakup-frozen-in-time.md) (idea, -) - time input and name-based streams before slice 3's long-running emitters
+
+## Recipe and CLI robustness (recipe-cli)
+
+1. [source becomes an absolute path outside a git checkout](docs/backlog/bug-2026-11-07-source-path-absolute-outside-git.md) (bug, medium) - standalone rule and the golden test outside git
+   quick win
+2. [written_by carries machine-local paths and drops quoting](docs/backlog/bug-2026-11-07-written-by-machine-local-paths.md) (bug, medium) - machine-local paths in Petri's committed JSON; pairs with item 1
+3. [Recipe mistakes pass plume check and fail late](docs/backlog/bug-2026-11-07-recipe-mistakes-pass-check-fail-late.md) (bug, medium) - strict recipes and exit codes (D20, D27)
+4. [Rerunning a preview's settings.toml overwrites the full sheet](docs/backlog/bug-2026-11-07-preview-settings-rerun-overwrites-full-sheet.md) (bug, medium) - `settings.toml` is meant to be rerunnable (D28)
+
+## Tests and CI (tests-ci)
+
+1. [Test that two identical GPU runs give identical bytes](docs/backlog/feature-2026-11-07-gpu-same-bytes-determinism-test.md) (feature, high) - determinism on the GPU, before slice 2's kernels
+   quick win
+2. [Tests for box emitters, noise breakup, warmup and open-face outflow](docs/backlog/feature-2026-11-07-tests-box-emitters-breakup-warmup-outflow.md) (feature, medium) - D10, D22 and D24 behavior later slices depend on
+3. [Guard the preview time budget in CI](docs/backlog/feature-2026-11-07-preview-time-budget-guard-ci.md) (feature, low) - keeps the preview budget honest between slices
 
 ## Sheet framing (sheet-framing)
 
 1. [A seat given as a point in meters](docs/backlog/feature-2026-11-07-seat-point-meters.md) (feature, -) - brief D17 allows a point; slice 4's impact needs one
    quick win
 2. [Rising effects fill only about half their frames](docs/backlog/idea-2026-11-07-rising-effects-fill-half-frames.md) (idea, -) - more pixels for traveling effects, but it revisits the union-crop rule of the sheet contract, so it needs the user's call
+3. [Log the ratio of rendered crop pixels to frame pixels](docs/backlog/idea-2026-11-07-log-render-to-frame-pixel-ratio.md) (idea, -) - sheet sharpness check ahead of slice 6's close-ups
 
 ## Look review (look-review)
 
