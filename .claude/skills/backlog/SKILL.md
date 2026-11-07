@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Capture forward-looking work — bugs, features, ideas — into per-item files in the project's docs/backlog/ directory so future sessions can find and act on them. Invoke when the user types /backlog, /backlog list, or /backlog close. ALSO use proactively to offer a backlog entry when the user defers work mid-conversation ("we should...", "TODO", "that's a bug, but not now", "let's circle back to..."), when you notice during code review or debugging that something is broken or suboptimal but out of scope for the current task, or when a retro draft includes Recommended Backlog Items (Open Questions / Known Limitations in older retros) not yet captured. Never auto-file without confirmation; never offer for the current task; never offer twice for the same item in one session; high-confidence specific items only.
+description: Capture forward-looking work - bugs, features, ideas - into per-item files in the project's docs/backlog/ directory so future sessions can find and act on them. Invoke when the user types /backlog, /backlog list, or /backlog close. ALSO use proactively to offer a backlog entry when the user defers work mid-conversation ("we should...", "TODO", "that's a bug, but not now", "let's circle back to..."), when you notice during code review or debugging that something is broken or suboptimal but out of scope for the current task, or when a retro draft includes Recommended Backlog Items (Open Questions / Known Limitations in older retros) not yet captured. Never auto-file without confirmation; never offer for the current task; never offer twice for the same item in one session; high-confidence specific items only.
 ---
 
 # Backlog
@@ -19,11 +19,11 @@ Parse the slash arguments after `/backlog`:
 - First token is `phases` → **capture children from a plan** (Step 2.5). The second token is a path to a plan document.
 - Anything else → respond `Unknown subcommand. Use /backlog [type] [title], /backlog list [type|all], /backlog close <fragment>, /backlog phase <parent> <title>, /backlog phases <plan-file>, or /backlog doctor.` and stop.
 
-## Step 2: Capture — gather fields
+## Step 2: Capture - gather fields
 
 Three invocation forms; choose based on the slash arguments:
 
-- **Interactive** (`/backlog` with no args): ask the user for type, title, optional priority, and a 1–3 sentence summary, one prompt at a time.
+- **Interactive** (`/backlog` with no args): ask the user for type, title, optional priority, and a 1-3 sentence summary, one prompt at a time.
 - **Fast path** (`/backlog <type> <title>`): infer summary from recent conversation context (last few user/assistant turns or recent tool output). Show a draft and ask for confirmation before writing.
 - **Terse path** (`/backlog <type> <title> -- <summary>`): use the inline summary verbatim. No confirmation step unless the type is invalid. Slug collisions are resolved silently by appending `-2`, `-3`, etc. (see Step 3).
 
@@ -36,7 +36,7 @@ Optional fields to gather (skip if not offered):
 ## Step 2.5: Capture children from a plan (`/backlog phases <plan-file>`)
 
 A large plan divides into phases meant to span several sessions. Those phases live in the plan
-document, which `/roadmap` never reads — so they are invisible where work is ordered, and they get
+document, which `/roadmap` never reads - so they are invisible where work is ordered, and they get
 forgotten. This turns them into items.
 
 **This parser is SHARED with the retro-discovery pass over historical plans. Do not write a second
@@ -50,7 +50,7 @@ not appearing depending on which command was run.
    **Level 1 is included, but only with both guards below.** Some plans put their real units at
    `#` - measured on one repo, eleven of them across three plans (`# STAGE 1`, `# PHASE A`,
    `# Sub-stage 1`), every one invisible to a `#{2,3}` pattern. Matching level 1 naively is worse
-   than not matching it: on that same corpus it also pulled in **14 wrapped C++ comments** that
+   than not matching it: on that same corpus it also pulled in **14 wrapped code comments** that
    begin with `#` inside fenced code blocks, plus 4 plan titles.
 
    - **Skip line 1.** A level-1 heading on the first line is the plan's title. The plan is not a
@@ -85,17 +85,17 @@ not appearing depending on which command was run.
 
    **Do NOT suppress on "no checkboxes and no sub-headings" instead.** It is the tempting
    mechanical proxy and it was dry-run and falsified: on one repo it correctly killed every record
-   above, but it also killed three genuinely deferred phases (a play surface, a HUD, a retirement
-   phase) that were correctly filed as real items and are exactly what `unelaborated` exists to
+   above, but it also killed three genuinely deferred phases
+   that were correctly filed as real items and are exactly what `unelaborated` exists to
    describe. A deferred phase and an empty verdict placeholder look identical by that measure.
 
 4. For each heading, derive a title from the text after the number, and read that phase's body for
    its `- [ ]` / `- [x]` checkboxes.
 
 5. Classify each phase:
-   - **done** — every checkbox ticked.
-   - **unfinished** — some unticked.
-   - **unelaborated** — it has NO checkboxes at all. A phase with no steps is not unfinished work, it
+   - **done** - every checkbox ticked.
+   - **unfinished** - some unticked.
+   - **unelaborated** - it has NO checkboxes at all. A phase with no steps is not unfinished work, it
      is *undesigned* work (plans often defer a late phase to its own future plan). Label it as such
      in the offer and do not present it as immediately actionable.
    - **halted** - the work was built, measured, and then RETIRED by a decision recorded somewhere
@@ -109,12 +109,12 @@ not appearing depending on which command was run.
    log. Before classifying ANY phase as unfinished, check both for a stop decision - a fired
    pre-registered STOP rule, a falsified mechanism, a "retires" or "superseded" commit. Measured on
    a real repo: three plans holding eleven units were all retired by their own pre-registered STOP
-   rules (one commit subject reads "third strike fires... the shared-outing family retires"), and
+   rules (each retiring commit said so in its subject), and
    every one of them scanned as plain unfinished work. In a project that pre-registers stop rules
    this is common, not an edge case.
 
    **Checkbox state can be worthless.** If a project adopted checkbox-ticking only recently, older
-   plans show 0 ticked regardless of what shipped — one real repo measured 0% ticked across 178 plans
+   plans show 0 ticked regardless of what shipped - one real repo measured 0% ticked across 178 plans
    before a convention change.
 
    **Find the convention's start DATE, and do it by counting plans, not boxes.** On that same repo
@@ -132,34 +132,34 @@ not appearing depending on which command was run.
    dependency graph is worse than one in a flat list because both copies accumulate edges.
 
    - Plans often say so outright. A `**Closes:** <existing item>` line under a phase heading names
-     the item that phase would duplicate — read it and follow it.
+     the item that phase would duplicate - read it and follow it.
    - Otherwise run the ordinary Step 3 duplicate check against the phase's title.
 
    When an existing item is found, offer three resolutions rather than filing blindly:
 
-   - **Adopt** — the existing item BECOMES the phase child: add `parent` and `blocked_by` to it
+   - **Adopt** - the existing item BECOMES the phase child: add `parent` and `blocked_by` to it
      instead of creating a new file. Right when the item and the phase are the same work.
-   - **Adopt and re-scope** — the item is broader or narrower than the phase. Say exactly how, and
+   - **Adopt and re-scope** - the item is broader or narrower than the phase. Say exactly how, and
      let the user decide whether to adopt, split, or leave it out of the tree.
-   - **Skip** — the phase is already covered and needs no item.
+   - **Skip** - the phase is already covered and needs no item.
 
    **An existing item may span SEVERAL phases**, which single-valued `parent` cannot express. Do not
    quietly pick one. Report the span and ask; adopting into the wrong phase silently misplaces the
    work in the schedule, which is the failure this whole schema exists to prevent.
 
-7. Present the full list — each phase with its classification, and each already-covered phase with
-   the existing item and the proposed resolution — and **ask which to file. Never file without
+7. Present the full list - each phase with its classification, and each already-covered phase with
+   the existing item and the proposed resolution - and **ask which to file. Never file without
    confirmation.** Every signal above is a heuristic, and a wrong one creates a file plus edges.
 
-8. For each accepted phase, file it via Steps 3–5 with:
+8. For each accepted phase, file it via Steps 3-5 with:
    - `parent:` set to the umbrella item (ask which item that is if it is not obvious; a plan is often
      *cited* by several items but *owned* by one).
-   - `blocked_by:` set to the previously accepted sibling. **Offer that chain, never assume it** — a
+   - `blocked_by:` set to the previously accepted sibling. **Offer that chain, never assume it** - a
      plan may declare a phase parallelizable (e.g. a heading saying "parallelizable from Phase 0
      onward"), and such a phase takes no `blocked_by` at all. Getting this wrong is what makes a
      startable phase look eighth in a queue.
 
-## Step 3: Capture — derive slug and resolve filename
+## Step 3: Capture - derive slug and resolve filename
 
 1. Lowercase the title.
 2. Replace any non-alphanumeric character with `-`.
@@ -182,7 +182,7 @@ grep -il "<keyword1>\|<keyword2>" docs/backlog/*.md 2>/dev/null
 
 Use the 2-3 most distinctive slug words as keywords (matches filenames via `-l` plus titles and bodies via `-i`). If any hit looks like it covers the same work, show the candidate(s) with their `title:` lines and ask: `Possibly a duplicate of <file>. Still file?` If the user confirms, continue; if it is a true duplicate, offer to append the new context to the existing item instead (see "Updating an item"). No plausible hits → proceed without asking.
 
-## Step 4: Capture — write the file
+## Step 4: Capture - write the file
 
 Write the file with this structure:
 
@@ -201,11 +201,11 @@ blocked_by: [<slug>, <slug>]          # omit unless hard-blocked by other items
 # <title>
 
 ## Summary
-<1–3 sentences. The "what" and "why this matters". Always required.>
+<1-3 sentences. The "what" and "why this matters". Always required.>
 ```
 
 **`parent` and `blocked_by` are OPTIONAL and omitted by default.** A slug is a filename without
-`.md`. `parent` is single-valued and means "this item is one part of that larger item" — a phase of a
+`.md`. `parent` is single-valued and means "this item is one part of that larger item" - a phase of a
 plan, a stage of a migration. `blocked_by` lists items that must reach `status: closed` before this
 one is workable.
 
@@ -227,7 +227,7 @@ Add additional sections from this menu **only if they have content**. Never emit
 <Steps, observed vs expected behavior, error messages.>
 
 ## Proposal                   ← features mostly; sometimes ideas
-<Sketch of the approach. Not a full design — that is brainstorming's job.>
+<Sketch of the approach. Not a full design - that is brainstorming's job.>
 
 ## Acceptance / Done When
 <How we will know it is resolved. Bullet list.>
@@ -241,7 +241,7 @@ cross-references - it is greppable and future sessions resolve it to the file.>
 <Anything else worth keeping.>
 ```
 
-## Step 5: Capture — commit
+## Step 5: Capture - commit
 
 ```bash
 git add docs/backlog/<filename>
@@ -314,7 +314,7 @@ grep -il "^title:.*<fragment>" docs/backlog/*.md 2>/dev/null
   - Multiple matches: list them and ask the user to pick one.
   - Exactly one match: proceed.
 
-2. **Check the edges before closing.** Both are warnings, not refusals — the user decides:
+2. **Check the edges before closing.** Both are warnings, not refusals - the user decides:
 
 ```bash
 grep -l "^parent: <slug>" docs/backlog/*.md 2>/dev/null                    # open children
@@ -329,7 +329,7 @@ grep -l "blocked_by:.*<slug>" docs/backlog/*.md 2>/dev/null                # ite
 
 3. Resolve `[resolution]` (default `fixed`). Must be one of `fixed`, `wontfix`, `duplicate`, `obsolete`. If invalid, ask the user.
 
-4. If the user did not provide a one-line resolution note inline, ask: `Resolution note? (1–2 sentences, optional commit SHA)`. Use the response as the note.
+4. If the user did not provide a one-line resolution note inline, ask: `Resolution note? (1-2 sentences, optional commit SHA)`. Use the response as the note.
 
 5. Move the file:
 
@@ -405,14 +405,14 @@ git commit -m "backlog: close <filename-without-extension>"
    outcome for a closed item; say so rather than leaving it silently unreported.
 
 3. Check **edges** across all items, open and closed. Skip this entirely if no file carries `parent`
-   or `blocked_by` — a project not using them has no edges to check, and an absent field is not a
+   or `blocked_by` - a project not using them has no edges to check, and an absent field is not a
    dangling one:
 
-   - **Dangling `parent`** — the named slug has no file in `docs/backlog/` or `docs/backlog/closed/`.
-   - **Dangling `blocked_by`** — same, per entry in the list.
-   - **Cycles** — follow `blocked_by` transitively and report any item reachable from itself. Report
+   - **Dangling `parent`** - the named slug has no file in `docs/backlog/` or `docs/backlog/closed/`.
+   - **Dangling `blocked_by`** - same, per entry in the list.
+   - **Cycles** - follow `blocked_by` transitively and report any item reachable from itself. Report
      **every member of the cycle**, not just the item you noticed it from; one name is not actionable.
-   - **Closed parent, open children** — a closed item that OPEN items still name as `parent`. This is
+   - **Closed parent, open children** - a closed item that OPEN items still name as `parent`. This is
      the state that makes a body of work look finished while its parts are outstanding.
 
 ```bash
@@ -442,9 +442,9 @@ When a capture turns out to be a duplicate (Step 3 check), this is the path: fol
 
 You are AUTHORIZED and ENCOURAGED to offer a backlog entry when you detect deferred work during normal conversation, but you MUST follow these rules:
 
-1. **Never offer for things the user is currently working on.** The current task is not deferred work. If the user is actively asking you to fix or implement something, just do it — do not interrupt to file a backlog entry.
+1. **Never offer for things the user is currently working on.** The current task is not deferred work. If the user is actively asking you to fix or implement something, just do it - do not interrupt to file a backlog entry.
 2. **Never offer twice for the same item in one session.** Track offers mentally for the duration of the session. If the user dismisses an offer, do not nag.
-3. **High confidence only.** Vague observations like "this could be cleaner" do not qualify. The item must have a specific, actionable shape — a recognizable bug, a concrete feature outline, or a defined question.
+3. **High confidence only.** Vague observations like "this could be cleaner" do not qualify. The item must have a specific, actionable shape - a recognizable bug, a concrete feature outline, or a defined question.
 4. **Never auto-file without confirmation.** All proactive captures require an explicit user accept. The user dismisses by saying no, ignoring, or moving on.
 
 **Triggers** (use judgment, these are signals not rules):
@@ -462,7 +462,7 @@ If the user accepts, capture via the fast-path flow (Step 2 fast path), inferrin
 
 ## Notes for Claude
 
-- The `description` field in frontmatter is what triggers this skill. Read it carefully — it lists every signal that should make you invoke `/backlog` proactively.
+- The `description` field in frontmatter is what triggers this skill. Read it carefully - it lists every signal that should make you invoke `/backlog` proactively.
 - Always commit each capture and each close as its own commit. The git log of `docs/backlog/` is itself a useful artifact.
 - Never read backlog files at session start unless the user asks.
-- This skill is project-scoped. If `git rev-parse --is-inside-work-tree` fails, respond `Not in a git repository — backlog requires a project.` and stop.
+- This skill is project-scoped. If `git rev-parse --is-inside-work-tree` fails, respond `Not in a git repository - backlog requires a project.` and stop.

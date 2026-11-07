@@ -102,6 +102,8 @@ except `timing.txt`.
   call-order dependencies are Medium.
 - No reaching through chains of objects (`a.b.c.d`).
 - House style: American spelling; never em or en dashes; descriptive names; units in names.
+- No machine-local paths (drive letters, home folders) in code, docs or agent files; another repository is
+  named by its GitHub name with a path relative to its root.
 - Comments state a constraint or hazard. A comment that narrates the change, restates the code, or makes
   a checkable claim nobody will keep true is a Low finding; suggest deleting it or moving it to the
   commit message.
@@ -120,7 +122,7 @@ whole suite; that is the verifier's gate.
 
 ## Severity
 
-- Critical: wrong output bytes, a broken determinism promise, a contract break Petri would import, data
+- Critical: wrong output bytes, a broken determinism promise, a contract break a game would import, data
   written outside the output folder.
 - High: a likely bug, a test that cannot fail, a golden file changed without approval, a budget blown.
 - Medium: a real defect with limited reach, or off the hot path.

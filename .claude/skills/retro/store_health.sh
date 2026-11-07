@@ -47,7 +47,7 @@ if git -C "$repo" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
   echo "dangling referents (backticked source/doc paths with no tracked file of that path or basename):"
   for f in "$mem"/*.md; do
     case "$f" in */MEMORY.md) continue ;; esac
-    grep -o '`[^` ]*`' "$f" | tr -d '`' | grep -E '\.(cpp|h|md|ps1|gd|toml|cmake)$' | grep -v '[<*$]' | sort -u |
+    grep -o '`[^` ]*`' "$f" | tr -d '`' | grep -E '\.(py|md|toml|sh|yml|yaml|json)$' | grep -v '[<*$]' | sort -u |
       while read -r t; do
         b=$(basename "$t")
         grep -qxF -- "$t" "$tracked" || grep -qF -- "/$b" "$tracked" || grep -qxF -- "$b" "$tracked" ||

@@ -100,13 +100,13 @@ prior retro. In plain language it answers: what problem the session worked on, w
 how it turned out. Session-local codenames - names coined by a spec, plan, backlog item, or test
 (criterion IDs like `WL-6a`, nicknames like "the flip", labels like "Branch A", tags like
 `[wl6_2x2]`) - must not appear unless glossed inline in plain words on first use. Everyday
-project-domain vocabulary (NPC, levy, tavern, determinism) is fine. Self-check before moving on:
+project-domain vocabulary (recipe, emitter, contact sheet, determinism) is fine. Self-check before moving on:
 would this paragraph make sense to someone who has never opened this project's docs? If any term
 requires another file to decode, it belongs in the Handoff instead.
 
-❌ `The flip's named blocker shipped end to end - BREWER passes WL-6a, and the measurement-first protocol killed the spec's own 12/10 reproduction target (the shipped constants WERE the defect).`
+❌ `T1.7's bound fell to the measurement-first rule - SL-adv loses 16% at 400 K, so the 2% gate was the defect, not a leak.`
 
-✅ `The town economy's payroll and treasury thresholds were hand-tuned constants; this session derived them from simulated tax income instead. That fixed brewers never earning back what they spend, and showed the old hand-tuned constants themselves - not the simulation - were causing the wallet-collapse failures under investigation.`
+✅ `A test expected the simulation to keep almost all of its smoke, and the smoke puff kept losing about a sixth of it. This session showed the loss comes from the way smoke is carried along the flow, which is known to lose a little each step, not from a bug; the test now uses a limit measured on a small case.`
 
 **The Handoff carries the density the TL;DR gave up.** It is the paragraph the next working
 session acts on: spec/backlog/criterion identifiers, commit SHAs, measured numbers, and codenames
@@ -220,7 +220,8 @@ by who must see it. Each home has a different reach, and the reach is the decidi
     with the project). Reach: every thread and session in that project, cloud ones included.
     It does not reach Claude Code sessions run outside the project, such as a local terminal
     session on the user's PC. A machine-specific fact written here names the machine it is about
-    (e.g. "on Chad's Windows PC, F:\petri"), since most readers run in a cloud container.
+    (e.g. "on the user's Windows PC with the RTX 2080 Ti"), since most readers run in a cloud
+    container. Name the machine, never a local path: the repository is cloned to different places.
   - *Local auto-memory* (a Claude Code session on one machine). Reach: this repository on this
     machine - its main session, every session in one of its git worktrees, and every subagent
     dispatched from it (the index is injected into each dispatch; the body is read on demand). It
@@ -237,14 +238,14 @@ by who must see it. Each home has a different reach, and the reach is the decidi
   subagent, and every clone, because it is loaded whole into each context - which is also why the
   rule goes in as a sentence or two, and a body that needs more lives in the tracked doc it points
   at.
-  A rule that only matters when touching certain files (gates, Godot layout, code style) goes in
-  the matching `.claude/rules/*.md` file instead; it loads, for sessions and subagents alike, as
-  soon as a matching file is read or edited.
+  A rule that only matters when touching certain files (kernels, the sheet contract, code style)
+  goes in the matching `.claude/rules/*.md` file instead (create one if none fits); it loads, for
+  sessions and subagents alike, as soon as a matching file is read or edited.
 - **`docs/agent-orchestration.md`** - a routing or lifecycle rule the orchestrator applies at
   intake or dispatch. Reach: only a session that follows the pointer in `CLAUDE.md`; its body is
   injected nowhere, so it is the wrong home for a rule that must change what a subagent does.
-- **the owning agent's prompt under `.claude/agents/`** - a domain rule (rendering, content, sim,
-  procedural generation) or a contract on that agent's own reporting. Reach: that agent on every
+- **the owning agent's prompt under `.claude/agents/`** - a domain rule (kernels, the recipe
+  pipeline, look tuning, review, verification) or a contract on that agent's own reporting. Reach: that agent on every
   dispatch, guaranteed.
 
 **Which memory store.** Use the memory directory the system prompt names, whichever store it is;
@@ -356,8 +357,8 @@ A grep hit is a lead, not a verdict. **Read every hit** (its `title:` and body) 
 >
 > M lessons will be promoted on commit:
 > P1. When dispatching a subagent for tests, scope it to a tag, never the full suite -> feedback memory
-> P2. Route all builds through build-test-verifier -> docs/agent-orchestration.md
-> P3. A green report must state the case count and binary timestamp -> extend `verify-binary-freshness-before-trusting-gates` (will be rewritten under the cap)
+> P2. Send every finished task through code-reviewer before verifier -> docs/agent-orchestration.md
+> P3. A green report must state the passed and skipped test counts -> extend `report-skipped-gpu-tests` (will be rewritten under the cap)
 >
 > Reply with: **commit** or **discard**, and which backlog items to file (`all`, a subset like `1,3`, or `none`). Add `hold P2` (or `hold all`) to keep a lesson out of its home this time.
 

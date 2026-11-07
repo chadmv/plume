@@ -2,7 +2,7 @@
 
 A fire, smoke and explosion simulator that renders flipbook sheets for realtime games, built for an agent
 to drive: write a TOML recipe, run it, read the contact sheets and numbers, change a value, run again. The
-first consumer is Petri (`F:\petri`, Godot 4.7).
+first consumer is Petri (the `chadmv/petri` repository, Godot 4.7).
 
 Design: `docs/specs/2026-11-07-plume-design-brief.md` (what and why, decisions D1 to D34) and
 `docs/specs/2026-11-07-plume-design.md` (how). Plan: `docs/plans/2026-11-07-plume-slices.md`.
@@ -41,6 +41,9 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
 
 - House style: American spelling; never em or en dashes (use a hyphen); descriptive names; plain language
   first, then the technical backing.
+- Standalone: the repo runs anywhere, including Claude Projects and cloud sessions. Never write a
+  machine-local path (a drive letter, a home folder) in code, docs or agent files; name another repository
+  by its GitHub name (`chadmv/petri`) and give a path relative to its root.
 - Code organization: one responsibility per file; folders by feature (`src/plume/{cli,recipe,sim,render,
   sheet,report}`); tests mirror `src/` under `tests/`; shared test helpers live in `tests/support/`.
 - The recipe schema (`src/plume/recipe/schema.py`) is the single source for keys, units, defaults and

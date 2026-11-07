@@ -113,8 +113,8 @@ including ones written long before the schema existed, which is the case it exis
    ticks boxes; in one that never did, they mean nothing, and this rule can then never fire,
    so the plan nags on every refresh forever. Measured: that single defect produced two of
    the three rows on one repo's live shortlist - a slice whose own umbrella item says it "is
-   implemented, gated", and a terrain plan whose closing phase was the played judgement the
-   user had already given. Before reporting, check the citing items' status and resolution
+   implemented, gated", and a plan whose closing phase was a review the user had already
+   given. Before reporting, check the citing items' status and resolution
    text and the git log; if they say the work shipped, the plan is complete regardless of its
    boxes. See the `backlog` skill's Step 2.5 on establishing whether a plan's vintage ticks
    boxes at all.
@@ -129,7 +129,7 @@ including ones written long before the schema existed, which is the case it exis
    from this plan already exist as items, which is the thing being checked for.
 
    Do NOT instead ask "does the umbrella have children", because **an umbrella frequently
-   does not cite its own plan.** Measured on a real repo: the Godot migration umbrella
+   does not cite its own plan.** Measured on a real repo: a migration umbrella
    mentions its own plan file zero times, while an unrelated bug cites it - so a rule
    keyed on the umbrella can never go quiet, and would nag forever about work already
    done. Phase items cite the plan their method lives in; that is the signal.
@@ -216,13 +216,13 @@ Fold every agent's findings into Step 5/6 ordering and into Suggested backlog ac
 Project-reviewer gap findings become suggested new items; their stale/duplicate verdicts
 become close/merge suggestions. Deduplicate against the generic Verify/Gaps agents - the
 overlap is intentional depth, not a reason to list a finding twice. Optionally attribute a
-finding inline, e.g. `(flagged by economy-content-auditor)`.
+finding inline, e.g. `(flagged by <agent name>)`.
 
 ## Step 5: Themes
 
 - **First run:** derive 4-8 themes by clustering the open items against the project's
   goals. Name each `<Display name> (<kebab-case-slug>)`. Prefer subsystem/outcome themes
-  (e.g. story-quality, resource-chains, kernel-health) over type buckets (bugs, features).
+  (e.g. solver-quality, sheet-contract, look-tuning) over type buckets (bugs, features).
 - **Later runs:** the existing ROADMAP.md section headers ARE the theme set. Keep them
   stable so `/roadmap <theme>` arguments keep working. Add a new theme only when new
   items genuinely fit no existing section. Never rename or remove a non-empty theme
@@ -345,11 +345,11 @@ file explaining the gap so it does not read as a lost refresh.
   an item with none renders exactly as before.
 
   ```markdown
-  - **[Umbrella title](docs/backlog/feature-....md)** `1/9 done` `next: Phase 2 - the checks become a gate`
-    - `done`    [Phase 1 - the extension becomes the game driver](docs/backlog/....md)
-    - `READY`   [Phase 2 - the checks become a gate](docs/backlog/....md)
-    - `READY`   [Phase 8 - asset conventions](docs/backlog/....md) `parallel`
-    - `blocked` [Phase 3 - the scenario session moves](docs/backlog/....md) `by ...-phase-2`
+  - **[Umbrella title](docs/backlog/feature-....md)** `1/6 done` `next: Phase 2 - vorticity confinement`
+    - `done`    [Phase 1 - multigrid pressure](docs/backlog/....md)
+    - `READY`   [Phase 2 - vorticity confinement](docs/backlog/....md)
+    - `READY`   [Phase 6 - extends and --set](docs/backlog/....md) `parallel`
+    - `blocked` [Phase 3 - curl-noise turbulence](docs/backlog/....md) `by ...-phase-2`
   ```
 
   - The parent carries a **derived** rollup: `` `N/M done` `` and `` `next: <title of the
