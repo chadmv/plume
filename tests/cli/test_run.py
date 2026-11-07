@@ -1,5 +1,6 @@
 import json
 import shutil
+import tomllib
 
 from plume.cli.main import EXIT_OK, main
 from plume.report.numbers import read_numbers
@@ -29,7 +30,12 @@ def test_run_writes_every_output(tmp_path, capsys):
     summary, rows = read_numbers((out / "numbers.txt").read_text())
     assert summary["backend"] == "cpu"
     assert len(rows) == 4
-    assert "peak_frame" in capsys.readouterr().out
+    out_text = capsys.readouterr().out
+    assert "peak_frame" in out_text
+    assert "added by the CFL cap" in out_text
+    resolved = tomllib.loads((out / "settings.toml").read_text())["resolved"]
+    assert len(resolved["steps_per_frame"]) == 4 and min(resolved["steps_per_frame"]) >= 3
+    assert resolved["total_steps"] == sum(resolved["steps_per_frame"])
 
 
 def test_identical_runs_write_identical_bytes(tmp_path):

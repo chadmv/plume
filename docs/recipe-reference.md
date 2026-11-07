@@ -115,6 +115,8 @@ Solver controls.
 | `pressure_iterations` | - | `60` | Red-black Gauss-Seidel sweeps per pressure solve, for `gauss_seidel`. |
 | `multigrid_cycles` | - | `2` | Multigrid V-cycles per pressure solve. |
 | `multigrid_sweeps` | - | `2` | Smoothing sweeps before and after each multigrid level's correction. |
+| `max_cells_per_step` | cells | `1.0` | CFL cap: the fastest gas may cross at most this many cells in one step; frames that would go further get more, shorter steps. |
+| `max_substeps` | - | `32` | Most steps the CFL cap may give one frame; a frame that needs more stops the run with an error. |
 
 ## [camera]
 
