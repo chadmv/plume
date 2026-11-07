@@ -18,8 +18,11 @@ quietly adding smoke, up to doubling it with turbulence. It no longer can.
 
 - PR #7 on `claude/project-thread-cf8c5q`. Plan: `docs/plans/2026-11-07-slice-2-solver-quality.md`
   (T2.1 to T2.8). Spec section 13 records what was built.
-- Tests: 115 pass, 2 skip (GPU) on CPU in the cloud session. **GPU not checked:** the `gpu` tests (CPU
-  against CUDA, two CUDA runs give the same bytes) and GPU timing need a run on the 2080 Ti before merge.
+- Tests: 115 pass, 2 skip (GPU) on CPU in the cloud session. On Chad's PC (RTX 2080 Ti) all 117 pass,
+  including both `gpu` tests (CPU against CUDA, two CUDA runs give the same bytes). The CPU and CUDA
+  preview numbers are identical.
+- GPU timing (2080 Ti): preview 3.7 s, full sheet 9.2 s (203 steps, fade frame 58). CPU preview on the
+  same PC 26.2 s, inside the 30 s budget.
 - Golden: `tests/golden/smoke_puff_preview.numbers.txt` was refreshed after Chad's approval, from a fresh
   CPU preview of the committed recipe (byte-identical to the reviewed preview's numbers).
 - The approved puff (full run, CPU): peak frame 5, fade frame 58 of 64, `frame_m` 1.39, seat (0.536,
