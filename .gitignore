@@ -1,0 +1,11 @@
+# Run outputs
+out/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
