@@ -11,7 +11,7 @@ from pathlib import Path
 
 from plume.recipe.build import build
 from plume.recipe.errors import RecipeError
-from plume.recipe.rules import check_rules
+from plume.recipe.rules import check_output_name, check_rules
 from plume.recipe.schema import Recipe
 
 
@@ -45,6 +45,7 @@ def apply_preview(recipe: Recipe) -> Recipe:
 def fill_dependent_defaults(recipe: Recipe, recipe_stem: str) -> Recipe:
     """Replaces the 'empty means derived' defaults with their values, so the settings log is explicit."""
     output = recipe.output
+    check_output_name(output.name or recipe_stem)
     columns = output.columns or math.ceil(math.sqrt(recipe.time.frames))
     ambient = recipe.domain.ambient_k
     emitters = tuple(

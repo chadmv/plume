@@ -85,6 +85,13 @@ def test_unknown_seat_is_rejected(tmp_path):
         load_recipe(write(tmp_path, text))
 
 
+@pytest.mark.parametrize("name", ["../escape", "a/b", "..", "C:evil", " spaced"])
+def test_output_name_must_be_a_plain_name(tmp_path, name):
+    text = MINIMAL + f'\n[output]\nname = "{name}"\n'
+    with pytest.raises(RecipeError, match=r"output\.name must be a plain name"):
+        load_recipe(write(tmp_path, text))
+
+
 def test_preview_coarsens_the_longest_axis_to_48_cells(tmp_path):
     recipe = load_recipe(write(tmp_path, MINIMAL), preview=True)
     derived = derive(recipe)

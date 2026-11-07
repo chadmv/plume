@@ -6,7 +6,15 @@ from plume.recipe.errors import RecipeError
 from plume.recipe.schema import ColorStop, Recipe
 
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+PLAIN_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*$")
 MIN_FRAME_PX = 8
+
+
+def check_output_name(name: str) -> None:
+    """Output names become file and folder names, so they must be one plain name: no paths, no `..`."""
+    if not PLAIN_NAME.match(name) or ".." in name:
+        raise RecipeError(f"output.name must be a plain name of letters, digits, '.', '_' and '-'; got {name!r} "
+                          f"(when output.name is empty the recipe's file name is used)")
 
 
 def check_rules(recipe: Recipe) -> None:
