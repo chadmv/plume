@@ -260,6 +260,8 @@ is generated from it (D33).
 - **A4 - Selectable channel layout with a baked shade (changes the sheet contract, D14, D18).** Agreed by
   the user 2026-11-07; the detail is `2026-11-07-shade-channel-design.md`, which amends sections 4.2, 5, 6
   and 8 here.
+- **A5 - A window for judging (changes the brief's "no window" constraint).** Agreed by the user 2026-11-08; the
+  detail is `2026-11-08-live-viewer-design.md`. `run` and `check` stay headless; `plume view` is new.
 
 ## 11. Changes while building slice 1
 
