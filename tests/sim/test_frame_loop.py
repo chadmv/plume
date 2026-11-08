@@ -70,3 +70,4 @@ def test_frame_generator_yields_every_frame_in_order_and_returns_the_step_log(cp
     assert [frame for frame, _ in seen] == [0, 1, 2, 3]
     assert seen == expected
     assert log == expected_log
+    assert log.steps_per_frame == (derived.steps_per_frame,) * 4 and log.warmup_steps == 0

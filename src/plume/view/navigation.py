@@ -53,7 +53,8 @@ class ViewCamera:
     def project(self, point: np.ndarray) -> tuple[float, float] | None:
         """Continuous pixel coordinates (x right, y down) of a world point; None behind the eye."""
         if not self.perspective:
-            return float((point @ self.right - self.left) / self.pixel), float((self.top - point @ self.up) / self.pixel)
+            return (float((point @ self.right - self.left) / self.pixel),
+                    float((self.top - point @ self.up) / self.pixel))
         offset = point - self.eye
         ahead = -(offset @ self.toward)
         if ahead <= 1e-9:

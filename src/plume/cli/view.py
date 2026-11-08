@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
+from plume.recipe.load import load_recipe
+
 INSTALL_HINT = "uv sync --extra view"
 
 
 class ViewUnavailable(Exception):
-    """The viewer cannot open: its extra is not installed, or it was asked to open something it cannot."""
+    """The viewer cannot open: its extra is not installed."""
 
 
 class ViewUsageError(Exception):
@@ -19,6 +21,7 @@ def run_view(recipe_path: Path, preview: bool, device: str, sets: tuple[str, ...
     if recipe_path.is_dir():
         raise ViewUsageError(f"{recipe_path} is a folder; opening a run's output folder (the Sheet tab) comes in "
                              "a later viewer slice. Open a recipe .toml")
+    load_recipe(recipe_path, preview=preview, sets=sets)  # a recipe error exits 2 whether or not the extra is in
     require_view_extra()
     from plume.view.app import run_viewer
     from plume.view.session import Session

@@ -29,7 +29,8 @@ def half_means(image):
 def test_light_falls_through_a_uniform_slab_as_beer_lambert(cpu_device):
     grid = small_grid(cpu_device, cells=CELLS, cell_m=CELL_M)
     fill(grid.smoke.data, np.full(CELLS, 0.5))
-    light = LightVolume(CELLS, np.array([0.0, 0.0, 1.0]), 2.0, cpu_device).compute(grid.smoke.data, grid.info.cell_m).numpy()
+    volume = LightVolume(CELLS, np.array([0.0, 0.0, 1.0]), 2.0, cpu_device)
+    light = volume.compute(grid.smoke.data, grid.info.cell_m).numpy()
     for k in (15, 8, 0):
         depth_m = (CELLS[2] - k - 0.5) * CELL_M  # from the cell center to the +z face
         assert light[8, 8, k] == pytest.approx(math.exp(-2.0 * 0.5 * depth_m), rel=0.01), k
