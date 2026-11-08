@@ -183,7 +183,8 @@ unused (the default) or normal x and y as below; the JSON's `channels` names the
 ## Constraints confirmed
 
 - Determinism: same recipe, same machine and backend gives the same bytes; one seed drives all randomness.
-- Headless and command-line only; no window.
+- Headless and command-line only; no window. (Amended 2026-11-08 by A5 in `2026-11-08-live-viewer-design.md`:
+  `run` and `check` stay headless; `view` is an optional window for judging and tuning.)
 - The sheet contract above is the user's and is matched exactly.
 - Petri imports sheets Lossless with Detect 3D off; Godot's default 3D detection switches to VRAM
   Compressed, which Godot rates "Moderate" quality loss.

@@ -1,16 +1,22 @@
 ---
-title: A live viewer app with an MCP server for interactive, chat-driven tuning
+title: A live viewer app for judging and tuning simulations
 type: feature
 status: open
 created: 2026-11-07
-priority: low
+priority: high
 source: user request, 2026-11-07
 ---
 
-# A live viewer app with an MCP server for interactive, chat-driven tuning
+# A live viewer app for judging and tuning simulations
 
 ## Summary
-An application that keeps a simulation running and renders it live, with an MCP server so the user can chat
+**Designed 2026-11-08:** `docs/specs/2026-11-08-live-viewer-design.md` (decisions V1 to V18, amendment A5),
+built in three slices, V1 Watch, V2 Tune and V3 Inspect (its section 10). The user's reason (2026-11-08): "it
+needs an application to view the live simulation in order to properly judge the simulation results. Just
+judging the sheets is not enough." The MCP server below was deferred to
+[[idea-2026-11-08-viewer-mcp-server]]; a chat drives the viewer by editing the recipe file, which it follows.
+
+Original summary: An application that keeps a simulation running and renders it live, with an MCP server so the user can chat
 with Claude to change recipe values and watch the effect update in real time. Today the loop is
 edit, rerun, read the contact sheets; a live view would make look tuning a conversation instead of a
 series of batch runs.
