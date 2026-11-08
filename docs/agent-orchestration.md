@@ -10,8 +10,8 @@ carries the rules it needs, so this playbook depends only on those files and `CL
 | Agent | Model | Writes | Owns |
 |-------|-------|--------|------|
 | `slice-planner` | inherit | `docs/plans/` only | task plans for slices and backlog items; measured numeric bounds |
-| `kernel-engineer` | opus | `src/plume/{sim,render}/`, `tests/{sim,render}/` | Warp kernels and the code that launches them |
-| `pipeline-engineer` | sonnet | `src/plume/{recipe,sheet,report,cli}/`, matching tests, `docs/recipe-reference.md` | recipe keys and loading, sheet contract, reports, CLI |
+| `kernel-engineer` | opus | `src/plume/{sim,render}/`, `tests/{sim,render}/`; the Warp kernels in `src/plume/view/` (`frame_cache.py`, `viewport.py`) | Warp kernels and the code that launches them |
+| `pipeline-engineer` | sonnet | `src/plume/{recipe,sheet,report,cli}/`, the rest of `src/plume/view/`, matching tests, `docs/recipe-reference.md` | recipe keys and loading, sheet contract, reports, CLI, the viewer window |
 | `look-tuner` | opus | `recipes/`, `docs/look-tuning.md`, `tests/golden/` after approval | the iterate loop, look-review packages, golden refresh |
 | `code-reviewer` | opus | nothing | independent review of each finished change |
 | `verifier` | sonnet | nothing | the evidence gate: tests, previews, same bytes, budgets |
@@ -82,8 +82,12 @@ verifier's output. A task is done when the reviewer approves and the verifier pa
 
 **6. Look.** Every slice ends with its example recipe's look review. Dispatch `look-tuner` with the recipe,
 the brief and, when the effect has one, the art reference from whoever asked for it (Plume keeps none of
-its own). Send the user the package's contact sheets and channel strip
-(`SendUserFile`) with the summary. The user rules; commit the recipe with the verdict. On approval,
+its own). Send the user the package's contact sheets and channel strip with the summary, and ask the user
+to judge the look in the live viewer on the PC: the message gives the command
+(`uv sync --extra view`, then `uv run plume view recipes/<name>.toml`) and what to look at (motion, depth,
+the inside, from which angles). A thread that launches the viewer on the PC itself (a Remote Control
+session) is making a headed GPU run and takes the PC slot through the coordinator; the user launching it
+needs no queue. The user rules; commit the recipe with the verdict. On approval,
 dispatch `look-tuner` to refresh the golden file, then `verifier` so the golden test passes on the new
 numbers. Tool friction from the package becomes backlog items.
 

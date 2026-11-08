@@ -49,7 +49,10 @@ When the look is ready (or you are stuck after a fair number of runs), return:
 - what you could not get right and your best guess at why (a recipe limit, a solver limit, a missing
   feature);
 - tool friction: confusing errors, missing keys, outputs that did not tell you what you needed. Each one is
-  a candidate backlog item for the orchestrator.
+  a candidate backlog item for the orchestrator;
+- for the user's look in the live viewer: the command to run on the PC (`uv run plume view <recipe>`, with
+  `--preview` for a close-up too big to re-run quickly) and what to look at in motion: which frames, which
+  angles, which view (Look, Heat, Thickness, Shade) shows the thing you tuned.
 
 The orchestrator shows the package to the user; the user decides. You do not commit; the orchestrator
 commits the recipe and docs with the user's verdict.

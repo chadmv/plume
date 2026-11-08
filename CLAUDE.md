@@ -33,6 +33,12 @@ device compiles kernels (about 20 s); later runs load them from Warp's cache.
 
 `docs/look-tuning.md` maps "what I see" to "which value to change"; add to it whenever a lesson is learned.
 
+The user judges a look in the live viewer (`plume view`, a window, so on the PC: cloud sessions have no
+screen). A look-review message gives the command to run on the PC and what to look at; the sheets, contact
+sheets and `numbers.txt` stay the written record. A thread that launches the viewer on the PC itself is
+making a headed GPU run and takes the PC slot. The viewer's code is `src/plume/view/`; its pure parts
+(navigation, guides, frame cache, session) are tested without a window.
+
 ## Outputs (`out/<name>/`, or `--out DIR`; previews in `preview/` inside it)
 
 `<name>.png` and `<name>.json` (the sheet and its contract), `contact_neutral.png`, `contact_grass.png`,
@@ -47,7 +53,7 @@ file but `timing.txt` is byte-identical between two identical runs on the same m
   machine-local path (a drive letter, a home folder) in code, docs or agent files; name another repository
   by its GitHub name (`chadmv/petri`) and give a path relative to its root.
 - Code organization: one responsibility per file; folders by feature (`src/plume/{cli,recipe,sim,render,
-  sheet,report}`); tests mirror `src/` under `tests/`; shared test helpers live in `tests/support/`.
+  sheet,report,view}`); tests mirror `src/` under `tests/`; shared test helpers live in `tests/support/`.
 - The recipe schema (`src/plume/recipe/schema.py`) is the single source for keys, units, defaults and
   meanings. Add a key there and regenerate the reference.
 - A recipe value that becomes part of a file path is checked as a plain name in `recipe/rules.py` at load
