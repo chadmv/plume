@@ -12,6 +12,14 @@ dependencies = [
     "tomli-w>=1.2",
 ]
 
+[project.optional-dependencies]
+# The live viewer's window (`plume view`): uv sync --extra view
+view = [
+    "imgui-bundle==1.93.0",
+    "PyOpenGL==3.1.10",
+    "glfw==2.10.0",
+]
+
 [project.scripts]
 plume = "plume.cli.main:main"
 
