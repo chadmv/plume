@@ -14,8 +14,8 @@ own ray march and the contact sheets' look (Look, Heat, Thickness, Shade views, 
 and it re-runs when the recipe or a parent is saved; a broken save shows a red banner while the last good run
 keeps playing. `plume run` is unchanged: a test pins its raw frames' bytes, and the viewer's frames are
 proved byte-identical to `plume run`'s. On the PC (2080 Ti, 1600 x 900) the window redraws 121 times a
-second while moving and 64 when still, but a whole puff run took 4.04 s against V17's 4 s, which goes to
-the user.
+second while moving and 64 when still. A whole puff run first took 4.04 s against V17's 4 s; drawing the
+landing frames at half size brought it to 3.1 to 3.2 s.
 
 ## Handoff
 
@@ -36,7 +36,9 @@ the user.
   on CUDA (the smoke puff's full grid, 1600 x 900): moving, 121 updates a second at the median (79 at the
   95th percentile), 4.6 ms redraws at half resolution; still, 64 a second, 11.8 ms full redraws. A whole run
   took 4.04 s once the kernels were compiled (5.33 s the first time), missing V17's 4 s by 0.04 s; an estimated
-  0.75 s of it (64 frames at 11.8 ms) is the full-size redraw of each frame as it lands. Not yet tried on
+  0.75 s of it (64 frames at 11.8 ms) was the full-size redraw of each frame as it lands. With landing frames
+  drawn at half size until the run is done (recommended on the user's card), two runs took 3.24 s and 3.07 s,
+  and the frame homed after the run is pixel-identical to before. Not yet tried on
   the PC: each control by hand, and the save re-run and error banner (all smoke-run in the cloud).
 - Next: the user's look at the viewer on the PC ends the slice; then V2 Tune (stages, the editing panel,
   Save, A/B compare). V1 runs alongside Plume slice 3, so the fireball can be judged in the viewer.
@@ -57,6 +59,8 @@ the user.
 
 ## Key Decisions
 
+- **A live run's landing frames draw at half size** until it is done, then go sharp. The full-size redraw of
+  each frame put the first PC run at 4.04 s, over V17's 4 s; the fix went to the user as a card.
 - **The look composite runs on the device.** The report's numpy composite took 50 ms at half resolution on the
   cloud CPU, far from 30 redraws a second. The ramps and sRGB curve are tabulated from `report/color.py`;
   the two formula lines are written a second time in the kernel and a parity test holds them within one byte.
