@@ -7,7 +7,7 @@ cap (`sim/step_cap.py`) may split a block into more, shorter steps. Frame `i` is
 the first frame already shows the effect starting.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 
 from plume.recipe.derived import Derived
@@ -41,6 +41,19 @@ class StepLog:
 
 def simulate(recipe: Recipe, derived: Derived, device: str, capture: Capture) -> StepLog:
     """Runs the whole recipe, calling `capture(frame_index, grid)` once per frame, in order."""
+    frames = simulate_frames(recipe, derived, device)
+    while True:
+        try:
+            frame, grid = next(frames)
+        except StopIteration as finished:
+            return finished.value
+        capture(frame, grid)
+
+
+def simulate_frames(recipe: Recipe, derived: Derived, device: str) -> Generator[tuple[int, Grid], None, StepLog]:
+    """Runs the whole recipe one frame at a time: yields `(frame_index, grid)` after each frame's steps, in
+    order, and returns the step log. The grid is live: read it before advancing. `plume run` and the viewer
+    both iterate this, so they run the same simulation; dropping the generator cancels the run."""
     grid = make_grid(derived, recipe.domain.cell_m, recipe.domain.faces, recipe.domain.ambient_k, device)
     stepper = Stepper(grid, recipe)
     cap = StepCap(recipe)
@@ -68,5 +81,5 @@ def simulate(recipe: Recipe, derived: Derived, device: str, capture: Capture) ->
     frame_steps = []
     for frame in range(recipe.time.frames):
         frame_steps.append(run_block(derived.steps_per_frame, f"frame {frame}"))
-        capture(frame, grid)
+        yield frame, grid
     return StepLog(warmup_steps, tuple(frame_steps), derived.steps_per_frame, derived.warmup_steps)
