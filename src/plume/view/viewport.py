@@ -23,7 +23,7 @@ from plume.render.camera import sheet_domain_view
 from plume.render.frame_renderer import FrameRenderer, toward_light_world
 from plume.render.raw_frame import CHANNELS, HEAT, NORMAL_X, NORMAL_Y, NORMAL_Z, SHADE, THICKNESS
 from plume.render.raymarch import FAR_M, ViewParams, slab_range
-from plume.report.color import hex_to_linear, linear_to_srgb, ramp
+from plume.report.color import hex_to_linear, ramp, to_srgb_bytes
 from plume.sheet.shade import NO_SMOKE
 from plume.sim.grid import GridInfo
 from plume.sim.sample import sample_index_space
@@ -116,7 +116,11 @@ def look_kernel(raw: wp.array3d(dtype=float), smoke_ramp: wp.array(dtype=wp.vec3
 @wp.kernel
 def center_depth_kernel(smoke: wp.array3d(dtype=float), info: GridInfo, origin: wp.vec3, direction: wp.vec3,
                         opacity_per_density: float, threshold: float, result: wp.array(dtype=float)):
-    """The distance along one ray at which the march's thickness first reaches `threshold`; -1 if never."""
+    """The distance along one ray at which the march's thickness first reaches `threshold`; -1 if never.
+
+    Follows `raymarch_kernel`'s step layout (half-cell steps over the ray's span in the box, samples at step
+    centers, Beer-Lambert per step) so the pivot sits where the drawn thickness passes the threshold;
+    change the two together."""
     box_max = info.origin_m + wp.vec3(float(info.dims[0]), float(info.dims[1]), float(info.dims[2])) * info.cell_m
     span = slab_range(origin, direction, info.origin_m, box_max)
     start = wp.max(span[0], 0.0)
@@ -159,8 +163,7 @@ class LookTables:
                                    device=device)
         self.emission_ramp = wp.array(ramp(recipe.look.emission_ramp, positions).astype(np.float32),
                                       dtype=wp.vec3, device=device)
-        srgb = np.floor(linear_to_srgb(np.linspace(0.0, 1.0, SRGB_TABLE_SIZE)) * 255.0 + 0.5)
-        self.srgb = wp.array(srgb.astype(np.uint8), dtype=wp.uint8, device=device)
+        self.srgb = wp.array(to_srgb_bytes(np.linspace(0.0, 1.0, SRGB_TABLE_SIZE)), dtype=wp.uint8, device=device)
 
 
 def look_inputs(recipe: Recipe, view: int, heat_divisor: float, shade_divisor: float, background_hex: str,
@@ -177,13 +180,17 @@ def look_inputs(recipe: Recipe, view: int, heat_divisor: float, shade_divisor: f
     return inputs
 
 
-def shade_bytes(raw: np.ndarray, recipe: Recipe, tables: LookTables, inputs: LookInputs, device: str) -> np.ndarray:
-    """The look kernel over a host raw image: (height, width, 4) uint8."""
-    raw_device = wp.array(raw.astype(np.float32), dtype=float, device=device)
-    out = wp.zeros((*raw.shape[:2], 4), dtype=wp.uint8, device=device)
+def launch_look(raw: wp.array, tables: LookTables, inputs: LookInputs, out: wp.array, device: str) -> None:
+    """Turns a raw march image ((height, width, CHANNELS) float) into display bytes ((height, width, 4))."""
     wp.launch(look_kernel, dim=raw.shape[:2], device=device,
-              inputs=[raw_device, tables.smoke_ramp, tables.emission_ramp, tables.srgb, inputs, out])
-    return out.numpy()
+              inputs=[raw, tables.smoke_ramp, tables.emission_ramp, tables.srgb, inputs, out])
+
+
+def look_bytes(raw: np.ndarray, tables: LookTables, inputs: LookInputs, device: str) -> np.ndarray:
+    """The look kernel over a host raw image: (height, width, 4) uint8."""
+    out = wp.zeros((*raw.shape[:2], 4), dtype=wp.uint8, device=device)
+    launch_look(wp.array(raw.astype(np.float32), dtype=float, device=device), tables, inputs, out, device)
+    return out.numpy().copy()
 
 
 class Viewport:
@@ -197,7 +204,8 @@ class Viewport:
         light = toward_light_world(sheet_view.camera, recipe.render.light_dir)
         self.toward_light_world = light / np.linalg.norm(light)
         self.tables = LookTables(recipe, device)
-        self._prepared: tuple[int, int] | None = None  # (run, frame) the loaded fields and volume pass hold
+        self._prepared: tuple[int, int] | None = None  # (run serial, frame) of the loaded fields and volume pass
+        self._fields: tuple[wp.array, wp.array] | None = None
         self._images: dict[tuple[int, int], tuple[wp.array, wp.array]] = {}
         self._depth = wp.zeros(1, dtype=float, device=device)
 
@@ -209,8 +217,7 @@ class Viewport:
         light = np.array([self.toward_light_world @ camera.right, self.toward_light_world @ camera.up,
                           self.toward_light_world @ camera.toward])
         inputs = look_inputs(self.recipe, view, run.heat_divisor, run.shade_divisor, background_hex, light)
-        wp.launch(look_kernel, dim=raw.shape[:2], device=self.device,
-                  inputs=[raw, self.tables.smoke_ramp, self.tables.emission_ramp, self.tables.srgb, inputs, out])
+        launch_look(raw, self.tables, inputs, out, self.device)
         return out.numpy().copy()  # on the CPU device numpy() shares the array the next draw overwrites
 
     def center_hit(self, run: LiveRun, frame: int, camera: ViewCamera) -> np.ndarray | None:
@@ -240,12 +247,14 @@ class Viewport:
         return -math.log(1.0 - 1.0 / 255.0) / (self.recipe.render.opacity_per_density * cell_m)
 
     def _load(self, run: LiveRun, frame: int) -> tuple[wp.array, wp.array]:
-        smoke, temperature = run.cache.load(frame)
-        key = (id(run), frame)
+        """The frame's widened fields and volume pass, redone only when the frame changes. The cache's
+        scratch arrays are this viewport's alone (one viewport per run), so they still hold the frame."""
+        key = (run.serial, frame)
         if self._prepared != key:
-            self.renderer.prepare(smoke, run.info.cell_m)
+            self._fields = run.cache.load(frame)
+            self.renderer.prepare(self._fields[0], run.info.cell_m)
             self._prepared = key
-        return smoke, temperature
+        return self._fields
 
     def _image(self, height: int, width: int) -> tuple[wp.array, wp.array]:
         if (height, width) not in self._images:

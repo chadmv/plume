@@ -3,8 +3,8 @@ import pytest
 
 from plume.recipe.derived import derive
 from plume.recipe.schema import EmitterSettings, FaceSettings
-from plume.view.guides import (DASH_PX, GAP_PX, BOX, EMITTER, LIGHT, TICK, Segment, box_edges, dashes,
-                               emitter_outline, floor_ticks, guide_segments, on_screen)
+from plume.view.guides import (DASH_PX, GAP_PX, BOX, EMITTER, LIGHT, TICK, Segment, box_edges, clip_to_rect,
+                               dashes, emitter_outline, floor_ticks, guide_segments, on_screen)
 from plume.view.navigation import Navigation
 from support.recipes import tiny_recipe
 
@@ -66,3 +66,19 @@ def test_dashes_cover_the_line_in_dash_and_gap_steps():
     assert pieces[0] == ((0.0, 0.0), (DASH_PX, 0.0))
     assert pieces[1][0] == (DASH_PX + GAP_PX, 0.0)
     assert pieces[-1][1] == (30.0, 0.0)
+
+
+def test_screen_segments_are_clipped_to_the_viewport_before_dashing():
+    assert clip_to_rect((-100.0, 50.0), (200.0, 50.0), 0.0, 0.0, 100.0, 100.0) == ((0.0, 50.0), (100.0, 50.0))
+    assert clip_to_rect((-100.0, -5.0), (200.0, -5.0), 0.0, 0.0, 100.0, 100.0) is None
+    nav = Navigation(LOW, SIZE)
+    nav.set_viewport(1600, 900)
+    nav.toggle_perspective()
+    nav.pivot = np.array([0.3, 1.0, 0.4]) - nav.basis()[2] * nav.distance  # the eye inside the box
+    camera = nav.view_camera()
+    pieces = 0
+    for segment in box_edges(LOW, SIZE, FaceSettings()):
+        ends = on_screen(camera, segment)
+        if ends is not None:
+            pieces += len(dashes(*ends))
+    assert pieces < 2000  # unclipped, the edges near the eye split into tens of thousands of dashes

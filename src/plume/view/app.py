@@ -227,7 +227,7 @@ class ViewerApp:
                 self._upload(np.zeros((1, 1, 4), dtype=np.uint8))
             return
         half = now - self.moved_s < MOVING_S
-        key = (id(run), frame, self.nav.pose(), self.view, self.background_index, half, run.heat_divisor,
+        key = (run.serial, frame, self.nav.pose(), self.view, self.background_index, half, run.heat_divisor,
                run.shade_divisor)
         if key == self.drawn_key:
             return

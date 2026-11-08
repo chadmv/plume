@@ -72,4 +72,4 @@ def test_before_assembly_heat_uses_the_largest_raw_heat_so_far(cpu_device):
     assert live.heat_divisor == max(float(frame[..., 0].max()) for frame in live.raw_frames)
     assert live.shade_divisor == 1.0
     live.cancel()
-    assert not live.done
+    assert not live.done and live.stopped and live.advance() is None

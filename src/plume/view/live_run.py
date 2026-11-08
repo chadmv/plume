@@ -6,6 +6,7 @@ the last frame lands, the sheet is assembled on a worker thread (host numpy only
 on the window's thread) to give the sheet's heat and shade divisors and its crop.
 """
 
+import itertools
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 
@@ -22,10 +23,14 @@ from plume.sim.run import StepLog, simulate_frames
 from plume.view.frame_cache import FrameCache
 
 
+_SERIALS = itertools.count(1)
+
+
 class LiveRun:
-    """One run of a resolved recipe. Call `advance` once per window update until `done`."""
+    """One run of a resolved recipe. Call `advance` once per window update until `done` or `stopped`."""
 
     def __init__(self, recipe: Recipe, derived: Derived, device: str, budget_bytes: float):
+        self.serial = next(_SERIALS)  # tells runs apart; an id() could be reused once a run is freed
         self.recipe = recipe
         self.derived = derived
         self.device = device
@@ -39,7 +44,7 @@ class LiveRun:
         self.assembly_error: str | None = None
         self.elapsed_s = 0.0
         self.started_s = time.perf_counter()
-        self.stopped = False  # set when a recipe error stopped the run part way
+        self.stopped = False  # cancelled part way (a recipe error, or a newer run replaced it)
         self._frames = simulate_frames(recipe, derived, device)
         self._largest_raw_heat = 0.0
         self._assembly: Future | None = None
@@ -59,8 +64,9 @@ class LiveRun:
         return self.steps is not None
 
     def advance(self) -> int | None:
-        """Simulates and captures the next frame and returns its index; None once the run is done."""
-        if self.done:
+        """Simulates and captures the next frame and returns its index; None once the run is done or
+        stopped."""
+        if self.done or self.stopped:
             return None
         frame, grid = next(self._frames)
         if self.info is None:
@@ -75,6 +81,8 @@ class LiveRun:
 
     def cancel(self) -> None:
         """Stops the run where it is; its frames stay drawable."""
+        if not self.done:
+            self.stopped = True
         self._frames.close()
         if self._executor is not None:
             self._executor.shutdown(wait=False, cancel_futures=True)

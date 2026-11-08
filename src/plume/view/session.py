@@ -59,7 +59,6 @@ class Session:
             self.run.advance()
         except RecipeError as error:
             self.run.cancel()
-            self.run.stopped = True
             self.error = f"recipe error: {error}"
 
     def reload(self) -> bool:

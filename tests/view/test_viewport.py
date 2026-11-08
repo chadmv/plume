@@ -11,11 +11,12 @@ from plume.report.composite import composite, decode, sheet_look
 from plume.view.live_run import LiveRun
 from plume.view.navigation import Navigation
 from plume.view.viewport import (HEAT_VIEW, LOOK, SHADE_VIEW, THICKNESS_VIEW, LookTables, Viewport, look_inputs,
-                                 shade_bytes)
+                                 look_bytes)
 from support.recipes import tiny_recipe
 
 BYTES = np.arange(0, 256, 15, dtype=np.uint8)
 HEAT_DIVISOR = 7.3
+SHADE_DIVISOR = 0.8  # raw shade runs to 0.8; the divisor maps it to 1
 BACKGROUND = "#aac476"
 
 
@@ -30,13 +31,13 @@ def byte_grid(channels):
 
 
 def raw_from_sheet_pixels(rgba, channels):
-    """The raw march values those bytes stand for, at heat divisor HEAT_DIVISOR and shade divisor 1."""
+    """The raw march values those bytes stand for, at HEAT_DIVISOR and SHADE_DIVISOR."""
     frame = decode(rgba, channels)
     raw = np.zeros((*rgba.shape[:2], CHANNELS), dtype=np.float64)
     raw[..., HEAT] = frame.heat * HEAT_DIVISOR
     raw[..., THICKNESS] = frame.thickness
     if channels == SHADE_LAYOUT:
-        raw[..., SHADE] = frame.shade * frame.thickness
+        raw[..., SHADE] = frame.shade * SHADE_DIVISOR * frame.thickness
     else:
         raw[..., [NORMAL_X, NORMAL_Y, NORMAL_Z]] = frame.normal
     return raw
@@ -51,8 +52,8 @@ def test_look_kernel_matches_report_composite(cpu_device, channels):
     tables = LookTables(recipe, cpu_device)
 
     def viewer(view):
-        inputs = look_inputs(recipe, view, HEAT_DIVISOR, 1.0, BACKGROUND, light)
-        return shade_bytes(raw, recipe, tables, inputs, cpu_device).astype(int)
+        inputs = look_inputs(recipe, view, HEAT_DIVISOR, SHADE_DIVISOR, BACKGROUND, light)
+        return look_bytes(raw, tables, inputs, cpu_device).astype(int)
 
     expected = to_srgb_bytes(composite(rgba, BACKGROUND, sheet_look(recipe))).astype(int)
     assert np.abs(viewer(LOOK)[..., :3] - expected).max() <= 1

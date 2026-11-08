@@ -21,6 +21,7 @@ CIRCLE_SEGMENTS = 48
 ARROW_LENGTH_SHARE = 0.35  # of the domain's largest side
 ARROW_HEAD_SHARE = 0.2  # of the arrow's length
 NEAR_M = 0.01  # perspective segments are clipped this far in front of the eye
+SCREEN_MARGIN_PX = 16.0  # segments are clipped to the viewport plus this margin before dashing
 DASH_PX = 7.0
 GAP_PX = 5.0
 
@@ -120,8 +121,9 @@ def light_arrow(origin: np.ndarray, toward_light: np.ndarray, length: float) -> 
 
 
 def on_screen(camera: ViewCamera, segment: Segment) -> tuple[tuple[float, float], tuple[float, float]] | None:
-    """The segment's pixel endpoints, clipped to just in front of a perspective eye; None when it is wholly
-    behind."""
+    """The segment's pixel endpoints, clipped to just in front of a perspective eye and then to the
+    viewport (plus a margin, so a dashed edge an eye is close to never splits into thousands of dashes off
+    screen); None when nothing of it is left."""
     start, end = segment.start, segment.end
     if camera.perspective:
         ahead_start, ahead_end = camera.ahead(start), camera.ahead(end)
@@ -131,7 +133,30 @@ def on_screen(camera: ViewCamera, segment: Segment) -> tuple[tuple[float, float]
             start = start + (end - start) * (NEAR_M - ahead_start) / (ahead_end - ahead_start)
         elif ahead_end < NEAR_M:
             end = end + (start - end) * (NEAR_M - ahead_end) / (ahead_start - ahead_end)
-    return camera.project(start), camera.project(end)
+    margin = SCREEN_MARGIN_PX
+    return clip_to_rect(camera.project(start), camera.project(end), -margin, -margin,
+                        camera.width_px + margin, camera.height_px + margin)
+
+
+def clip_to_rect(start: tuple[float, float], end: tuple[float, float], left: float, top: float, right: float,
+                 bottom: float) -> tuple[tuple[float, float], tuple[float, float]] | None:
+    """The part of a screen segment inside a rectangle (Liang-Barsky); None when none is."""
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    enter, leave = 0.0, 1.0
+    for step, room in ((-dx, start[0] - left), (dx, right - start[0]), (-dy, start[1] - top),
+                       (dy, bottom - start[1])):
+        if step == 0.0:
+            if room < 0.0:
+                return None
+            continue
+        share = room / step
+        if step < 0.0:
+            enter = max(enter, share)
+        else:
+            leave = min(leave, share)
+    if enter > leave:
+        return None
+    return _along(start, end, enter), _along(start, end, leave)
 
 
 def dashes(start: tuple[float, float], end: tuple[float, float]) -> list[tuple[tuple[float, float],
