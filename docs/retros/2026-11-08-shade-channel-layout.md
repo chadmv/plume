@@ -12,7 +12,8 @@ blue channel, and that is the new default: the smoke is lit by one key light wit
 in, so a game gets a dense, rounded look from a single multiply, and alpha is simply 255. A recipe can
 still ask for the old normal layout, which writes exactly what it did before. Heat and thickness are
 unchanged in both, so the smoke puff's per-frame numbers match the approved look; its new shaded look
-waits on Chad's review, and the GPU tests wait on a PC run.
+waits on Chad's review. On the PC's GPU every test passes and the full sheet takes about the same time as
+before (7.0 s against 7.2 s).
 
 ## Handoff
 
@@ -26,15 +27,19 @@ waits on Chad's review, and the GPU tests wait on a PC run.
 - Code: `render/light_volume.py` (gather kernel, one thread per cell), `raymarch.py` shade branch,
   `sheet/shade.py` (easing, `shade_divisor`), layout-aware `resample`, `soften`, `quantize`, `composite`,
   `channels`, `numbers` (summary gains `channels` and `shade_divisor`).
-- Tests: 144 pass, 2 skip (GPU) on cloud CPU. The same-bytes CLI test runs in both layouts; the GPU
-  same-bytes test uses the default layout, so it covers the light volume kernel, and needs a PC run.
+- Tests: 144 pass, 2 skip (GPU) on cloud CPU; 146 pass on the PC (RTX 2080 Ti), both gpu tests included.
+  The same-bytes CLI test runs in both layouts; the GPU same-bytes test uses the default layout, so it
+  covers the light volume kernel.
+- GPU timing (2080 Ti, kernels cached, one run each): preview 1.99 s (render 0.015); full shade 6.98 s
+  (simulate 2.30, render 0.16, assemble 2.31, report 2.07); full normal 7.18 s (render 0.27, assemble
+  1.74). The shade's easing adds about 0.6 s of assembly; the light volume costs nothing visible on GPU.
 - Smoke puff in the new default, cloud CPU: preview 47.8 s (simulate 44.2, render 3.1); full 578 s
   (simulate 414, render 161), peak frame 5, fade frame 58, `frame_m` 1.3905, the same as the approved
   slice 2 look. The preview's per-frame table is identical to `tests/golden/smoke_puff_preview.numbers.txt`;
   only the summary gains two lines, refreshed once Chad approves the look.
 - The backlog item stays open until Chad approves the shaded puff and the golden summary is refreshed.
-- Next: Chad's look review of the shaded puff, then the PC run (`uv run pytest` with the gpu tests, GPU
-  preview and full timing), then slice 3.
+- Next: Chad's look review of the shaded puff (then refresh the golden summary from a fresh preview of the
+  committed recipe), then slice 3.
 
 ## What Was Built
 
