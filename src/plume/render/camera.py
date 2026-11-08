@@ -9,6 +9,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from plume.recipe.derived import Derived
+from plume.recipe.schema import Recipe
+
 
 @dataclass(frozen=True)
 class Camera:
@@ -66,3 +69,10 @@ def make_domain_view(camera: Camera, domain_min_m: tuple, domain_size_m: tuple, 
         width_px=math.ceil((max(xs) - min(xs)) / pixel_m - 1e-6),
         height_px=math.ceil((max(ys) - min(ys)) / pixel_m - 1e-6),
     )
+
+
+def sheet_domain_view(recipe: Recipe, derived: Derived) -> DomainView:
+    """The sheet camera's domain view of a recipe: what `plume run` renders every frame over."""
+    camera = make_camera(recipe.camera.elevation_deg, recipe.camera.azimuth_deg)
+    return make_domain_view(camera, derived.domain_min_m, derived.size_m, recipe.domain.cell_m,
+                            recipe.render.px_per_cell)
