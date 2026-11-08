@@ -1,7 +1,9 @@
 ---
 title: Selectable channel layout with a baked self-shadowed shade
 type: feature
-status: open
+status: closed
+closed: 2026-11-08
+resolution: fixed
 created: 2026-11-07
 priority: high
 source: check of Plume against its first consumer's flipbook needs (Petri changed B to a baked shade after a fireball look review)
@@ -39,3 +41,6 @@ any game.
 - `docs/specs/2026-11-07-plume-design.md` section 10 (A4)
 - `docs/backlog/feature-2026-11-07-slice-3-combustion-fireball-plume.md`
 - `chadmv/petri`: `docs/specs/2026-11-07-visual-effects-workflow-design.md` sections 6.3 and 6.4 (the guide)
+
+## Resolution
+Built in PR #10 (merge 3cf2689): selectable `output.channels` with shade as the default, light volume, thin-pixel easing, A = 255, `render.light_dir`; PC GPU tests green. Chad merged it as the look approval; the golden summary lines were refreshed afterward.
