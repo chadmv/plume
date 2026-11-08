@@ -17,6 +17,8 @@ uv run plume check recipes/smoke_puff.toml            # validate, print resolved
 uv run plume run recipes/smoke_puff.toml --preview --set forces.drag_per_s=0.4   # one-off override
 uv run pytest                                         # all tests (the gpu-marked ones skip without CUDA)
 uv run python -m plume.recipe.reference               # regenerate docs/recipe-reference.md
+uv sync --extra view                                  # the live viewer's window packages
+uv run plume view recipes/smoke_puff.toml             # the live viewer (a window: PC with a GPU)
 ```
 
 `--device auto|cuda|cpu` picks where kernels run; `auto` uses the GPU when there is one. The first run on a
@@ -37,7 +39,8 @@ The user judges a look in the live viewer (`plume view`, a window, so on the PC:
 screen). A look-review message gives the command to run on the PC and what to look at; the sheets, contact
 sheets and `numbers.txt` stay the written record. A thread that launches the viewer on the PC itself is
 making a headed GPU run and takes the PC slot. The viewer's code is `src/plume/view/`; its pure parts
-(navigation, guides, frame cache, session) are tested without a window.
+(navigation, guides, frame cache, session) are tested without a window, and a cloud session can smoke-run
+the window itself on CPU under `xvfb-run` (software OpenGL) to catch crashes, not to judge a look.
 
 ## Outputs (`out/<name>/`, or `--out DIR`; previews in `preview/` inside it)
 

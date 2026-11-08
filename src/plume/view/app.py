@@ -207,6 +207,7 @@ class ViewerApp:
             self._home()
             self.nav_needs_home = False
         origin = imgui.get_cursor_screen_pos()
+        shown_camera = self.nav.view_camera()  # the pose the image shows; the input below moves the next one
         self._redraw(now, width, height)
         imgui.image(imgui.ImTextureRef(self.texture), imgui.ImVec2(width, height))
         hovered = imgui.is_item_hovered()
@@ -214,7 +215,7 @@ class ViewerApp:
         draw_list = imgui.get_window_draw_list()
         draw_list.push_clip_rect(origin, imgui.ImVec2(origin.x + width, origin.y + height), True)
         if self.show_guides:
-            self._draw_guides(draw_list, origin)
+            self._draw_guides(draw_list, origin, shown_camera)
         self._draw_overlay(draw_list, origin, width, now)
         draw_list.pop_clip_rect()
 
@@ -375,9 +376,8 @@ class ViewerApp:
 
     # -- drawing over the viewport --------------------------------------------------------------------------
 
-    def _draw_guides(self, draw_list, origin) -> None:
+    def _draw_guides(self, draw_list, origin, camera) -> None:
         session = self.session
-        camera = self.nav.view_camera()
         segments = guide_segments(session.recipe, session.derived, self.playhead,
                                   session.viewport.toward_light_world)
         for segment in segments:

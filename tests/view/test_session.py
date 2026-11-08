@@ -98,3 +98,43 @@ def test_the_preview_toggle_re_runs_on_the_preview_grid(cpu_device, tmp_path):
     full_cells = session.derived.cells
     session.set_preview(True)
     assert session.runs_started == 2 and session.derived.cells != full_cells
+
+
+def test_fixing_a_parent_named_by_a_broken_reload_re_runs(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    bump(tmp_path / "child.toml", CHILD.replace('"parent.toml"', '"base.toml"'))  # base.toml does not exist yet
+    session.update(now_s=1e12)
+    assert "recipe not found" in session.error
+    write(tmp_path / "base.toml", PARENT.replace("smoke_per_s = 6.0", "smoke_per_s = 4.0"))
+    session.update(now_s=2e12)
+    assert session.error is None and session.runs_started == 2
+
+
+def test_an_unreadable_save_is_a_banner_not_a_crash(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    (tmp_path / "child.toml").write_bytes(CHILD.encode() + b"# 90\xb0 turn\n")  # not UTF-8
+    session.reload()
+    assert session.error.startswith("recipe error:") and "not valid TOML" in session.error
+
+
+def test_a_run_stopped_by_a_recipe_error_keeps_its_frames_and_a_fix_re_runs(cpu_device, tmp_path):
+    fast = TINY.replace('noise = {', 'velocity_mps = [0.0, 20.0, 0.0]\nnoise = {') + "\n[solver]\nmax_substeps = 4\n"
+    write(tmp_path / "fast.toml", fast)
+    session = Session.open(tmp_path / "fast.toml", preview=False, sets=(), device="cpu", cache_gb=1.0)
+    for _ in range(4):
+        session.advance()
+    assert session.run.stopped and session.error.startswith("recipe error:")
+    landed, seconds = session.run.landed, session.run_seconds
+    assert session.run_seconds == seconds  # the clock stops with the run
+    session.advance()
+    assert session.run.landed == landed
+    bump(tmp_path / "fast.toml", fast.replace("max_substeps = 4", "max_substeps = 128"))
+    session.update(now_s=1e12)
+    assert session.error is None and not session.run.stopped and session.runs_started == 2
+
+
+def test_the_preview_toggle_stays_put_when_the_recipe_has_an_error(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    bump(tmp_path / "child.toml", CHILD.replace("smoke_per_s = 0.5", "smoke_per_sec = 0.5"))
+    session.set_preview(True)
+    assert not session.preview and session.error is not None

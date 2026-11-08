@@ -81,8 +81,9 @@ class LiveRun:
 
     def cancel(self) -> None:
         """Stops the run where it is; its frames stay drawable."""
-        if not self.done:
+        if not self.done and not self.stopped:
             self.stopped = True
+            self.elapsed_s = time.perf_counter() - self.started_s
         self._frames.close()
         if self._executor is not None:
             self._executor.shutdown(wait=False, cancel_futures=True)

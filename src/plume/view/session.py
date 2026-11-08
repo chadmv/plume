@@ -15,7 +15,7 @@ from plume.recipe.load import load_recipe_with_origin
 from plume.recipe.schema import Recipe
 from plume.sim.device import init_device
 from plume.view.live_run import LiveRun
-from plume.view.recipe_watch import RecipeWatch, chain_paths
+from plume.view.recipe_watch import RecipeWatch, chain_paths, reachable_chain
 from plume.view.viewport import Viewport
 
 GIGABYTE = 2**30
@@ -67,6 +67,7 @@ class Session:
             recipe, origin = load_recipe_with_origin(self.recipe_path, preview=self.preview, sets=self.sets)
         except RecipeError as error:
             self.error = f"recipe error: {error}"
+            self.watch.follow(reachable_chain(self.recipe_path))
             return False
         self.error = None
         self.watch.follow(chain_paths(self.recipe_path, origin.extends_chain))
@@ -77,15 +78,19 @@ class Session:
         return True
 
     def set_preview(self, preview: bool) -> None:
-        """The Full or Preview toggle: re-runs on the other grid."""
+        """The Full or Preview toggle: re-runs on the other grid. If the recipe has an error, the toggle
+        stays where it was (the banner says why)."""
         if preview != self.preview:
             self.preview = preview
-            self.reload()
+            if not self.reload() and self.error is not None:
+                self.preview = not preview
 
     @property
     def run_seconds(self) -> float:
-        """The run's wall time: final once done, else so far."""
-        return self.run.elapsed_s if self.run.done else time.perf_counter() - self.run.started_s
+        """The run's wall time: final once done or stopped, else so far."""
+        if self.run.done or self.run.stopped:
+            return self.run.elapsed_s
+        return time.perf_counter() - self.run.started_s
 
     def _start(self, recipe: Recipe) -> None:
         self.recipe = recipe
