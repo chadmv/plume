@@ -1,6 +1,6 @@
 """The numbers file: a summary block, then one fixed-width row of measurements per frame.
 
-Measured from the quantized sheet frames, so the numbers describe exactly what Petri gets.
+Measured from the quantized sheet frames, so the numbers describe exactly what a game gets.
 """
 
 from dataclasses import dataclass
@@ -35,6 +35,8 @@ class RunFacts:
     fps: float
     frame_m: float
     heat_divisor: float
+    channels: str
+    shade_divisor: float | None  # None in the normal layout, which has no shade
 
 
 def measure(frames: list[np.ndarray], fps: float) -> list[FrameNumbers]:
@@ -63,6 +65,8 @@ def numbers_text(rows: list[FrameNumbers], facts: RunFacts) -> str:
         ("fps", f"{facts.fps:.6f}"),
         ("frame_m", f"{facts.frame_m:.6f}"),
         ("heat_divisor", f"{facts.heat_divisor:.6f} K m"),
+        ("channels", facts.channels),
+        *([("shade_divisor", f"{facts.shade_divisor:.6f}")] if facts.shade_divisor is not None else []),
         ("peak_frame", str(peak)),
         ("fade_frame", "never" if fade is None else str(fade)),
     ]

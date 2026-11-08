@@ -5,9 +5,8 @@ import math
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from plume.recipe.schema import LookSettings
 from plume.report.color import to_srgb_bytes
-from plume.report.composite import composite
+from plume.report.composite import SheetLook, composite
 
 GAP_PX = 2
 GAP_COLOR = (40, 40, 40)
@@ -16,15 +15,15 @@ LABEL_SHADOW = (0, 0, 0)
 LABEL_SIZE_PX = 11
 
 
-def contact_sheet(frames: list[np.ndarray], columns: int, background_hex: str, look: LookSettings) -> Image.Image:
+def contact_sheet(frames: list[np.ndarray], columns: int, background_hex: str, style: SheetLook) -> Image.Image:
     """Each frame composited, shrunk to `look.contact_px`, numbered in its top-left corner."""
-    size = look.contact_px
+    size = style.look.contact_px
     rows = math.ceil(len(frames) / columns)
     sheet = Image.new("RGB", (columns * (size + GAP_PX) + GAP_PX, rows * (size + GAP_PX) + GAP_PX), GAP_COLOR)
     draw = ImageDraw.Draw(sheet)
     font = label_font()
     for index, frame in enumerate(frames):
-        thumbnail = composited_image(frame, background_hex, look).resize((size, size), Image.Resampling.LANCZOS)
+        thumbnail = composited_image(frame, background_hex, style).resize((size, size), Image.Resampling.LANCZOS)
         row, column = divmod(index, columns)
         x = GAP_PX + column * (size + GAP_PX)
         y = GAP_PX + row * (size + GAP_PX)
@@ -33,9 +32,9 @@ def contact_sheet(frames: list[np.ndarray], columns: int, background_hex: str, l
     return sheet
 
 
-def composited_image(frame: np.ndarray, background_hex: str, look: LookSettings) -> Image.Image:
+def composited_image(frame: np.ndarray, background_hex: str, style: SheetLook) -> Image.Image:
     """One frame over a background, as an sRGB image at the frame's own size."""
-    return Image.fromarray(to_srgb_bytes(composite(frame, background_hex, look)))
+    return Image.fromarray(to_srgb_bytes(composite(frame, background_hex, style)))
 
 
 def label_font() -> ImageFont.ImageFont | ImageFont.FreeTypeFont:

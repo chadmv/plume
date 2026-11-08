@@ -16,6 +16,7 @@ from plume.recipe.variation import RecipeOrigin
 from plume.render.camera import DomainView, make_camera, make_domain_view
 from plume.render.frame_renderer import FrameRenderer
 from plume.report.channels import channel_strip
+from plume.report.composite import sheet_look
 from plume.report.contact import contact_sheet
 from plume.report.numbers import RunFacts, measure, numbers_text
 from plume.report.timing import StageTimer
@@ -51,8 +52,8 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
                             derived.domain_min_m, derived.size_m, recipe.domain.cell_m, recipe.render.px_per_cell)
     raw_frames, steps = _simulate_and_capture(recipe, derived, device_name, view, timer)
     with timer.stage("assemble"):
-        assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px,
-                             recipe.render.soften_px, recipe.render.crop_margin)
+        assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px, recipe.render,
+                             recipe.output.channels)
     with timer.stage("report"):
         out_dir = _out_dir(recipe, out, preview)
         files, numbers = _write_outputs(out_dir, recipe, derived, device_name, assembled,
@@ -67,7 +68,7 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
 
 def _simulate_and_capture(recipe: Recipe, derived: Derived, device: str, view: DomainView,
                           timer: StageTimer) -> tuple[list[np.ndarray], StepLog]:
-    renderer = FrameRenderer(view, recipe.render, derived.cells, device)
+    renderer = FrameRenderer(view, recipe.render, derived.cells, recipe.output.channels, device)
     raw_frames = []
 
     def capture(frame, grid):
@@ -117,16 +118,18 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
     frames = assembled.frames
     write_png(files["sheet"], pack(frames, columns))
     info = SheetInfo(frames=len(frames), columns=columns, frame_px=recipe.output.frame_px, fps=derived.fps,
-                     frame_m=assembled.frame_m, seat=assembled.seat, source=source, tool=tool_label(),
-                     written_by=command)
+                     frame_m=assembled.frame_m, seat=assembled.seat, channels=recipe.output.channels,
+                     source=source, tool=tool_label(), written_by=command)
     files["json"].write_text(sheet_json_text(info), newline="\n")
-    look = recipe.look
-    contact_sheet(frames, columns, look.backgrounds.neutral, look).save(files["contact_neutral"], compress_level=6)
-    contact_sheet(frames, columns, look.backgrounds.grass, look).save(files["contact_grass"], compress_level=6)
-    channel_strip(frames, look).save(files["channels"], compress_level=6)
+    style = sheet_look(recipe)
+    backgrounds = recipe.look.backgrounds
+    contact_sheet(frames, columns, backgrounds.neutral, style).save(files["contact_neutral"], compress_level=6)
+    contact_sheet(frames, columns, backgrounds.grass, style).save(files["contact_grass"], compress_level=6)
+    channel_strip(frames, style).save(files["channels"], compress_level=6)
     nx, ny, nz = derived.cells
     facts = RunFacts(recipe=source, backend=device, grid=f"{nx} x {ny} x {nz} cells of {recipe.domain.cell_m:.6f} m",
-                     fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor)
+                     fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor,
+                     channels=recipe.output.channels, shade_divisor=assembled.shade_divisor)
     numbers = numbers_text(measure(frames, derived.fps), facts)
     files["numbers"].write_text(numbers, newline="\n")
     files["settings"].write_text(recipe_to_toml(recipe, derived, device, origin, _step_facts(steps)), newline="\n")

@@ -1,19 +1,27 @@
-"""The soften pass: a light Gaussian blur on every channel, then normals made unit length again."""
+"""The soften pass: a light Gaussian blur on every channel, then (normal layout) normals made unit length
+again."""
 
 import math
 
 import numpy as np
 
+from plume.recipe.schema import NORMAL_LAYOUT
 from plume.render.raw_frame import NORMAL_X, NORMAL_Z
 
 
-def soften(frame: np.ndarray, sigma_px: float) -> np.ndarray:
-    """Blurs all channels of a (size, size, 5) frame by `sigma_px` and renormalizes its normals."""
-    result = frame
-    if sigma_px > 0.0:
-        weights = _gaussian(sigma_px)
-        result = _blur_axis(_blur_axis(frame, weights, axis=0), weights, axis=1)
-    return _renormalize(result)
+def soften(frame: np.ndarray, sigma_px: float, channels: str) -> np.ndarray:
+    """Blurs all channels of a (size, size, 5) frame by `sigma_px`; in the normal layout, renormalizes
+    its normals."""
+    result = blur(frame, sigma_px)
+    return _renormalize(result) if channels == NORMAL_LAYOUT else result
+
+
+def blur(image: np.ndarray, sigma_px: float) -> np.ndarray:
+    """A Gaussian blur over the first two axes, edges extended; `sigma_px` 0 returns the image."""
+    if sigma_px <= 0.0:
+        return image
+    weights = _gaussian(sigma_px)
+    return _blur_axis(_blur_axis(image, weights, axis=0), weights, axis=1)
 
 
 def _gaussian(sigma: float) -> np.ndarray:

@@ -7,7 +7,7 @@ import typing
 from typing import Any
 
 from plume.recipe.errors import RecipeError
-from plume.recipe.schema import field_info
+from plume.recipe.schema import MOVED_KEYS, field_info
 
 # Top-level tables a recipe may carry that are information only (the settings log's derived values).
 IGNORED_TOP_LEVEL = ("resolved",)
@@ -98,6 +98,8 @@ def _table_or_error(value: Any, key_path: str) -> dict[str, Any]:
 
 
 def _unknown_key_message(key_path: str, key: str, valid: list[str]) -> str:
+    if key_path in MOVED_KEYS:
+        return f"unknown key {key_path}; it moved to {MOVED_KEYS[key_path]}"
     close = difflib.get_close_matches(key, valid, n=1, cutoff=0.6)
     hint = f"; did you mean {close[0]}?" if close else f"; valid keys are {', '.join(valid)}"
     return f"unknown key {key_path}{hint}"
