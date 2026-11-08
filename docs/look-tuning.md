@@ -60,3 +60,25 @@ whenever a run teaches something.
   next guess read pink on grass; sampling the game's reference image settled it.
 - **Smoke barely shows on `contact_neutral.png`.** The default smoke color is a light warm gray close to
   the neutral background; judge on `contact_grass.png`, or change `look.smoke_ramp` (preview only).
+
+## Shade (the default channel layout)
+
+- **Which layout.** `output.channels = "heat,thickness,shade,unused"` (the default) bakes the key light and
+  the smoke's own shadow into B, so a game multiplies its smoke color by it. `"heat,thickness,normal_x,normal_y"`
+  writes the surface normal instead, for a game that lights the card itself. R and G are the same in
+  both, so `numbers.txt`'s per-frame table does not change with the layout.
+- **The light comes from the wrong side.** `render.light_dir` points toward the light in camera space
+  (x right, y up, z toward the camera). It lights both layouts' contact sheets and bakes the shade.
+- **Shadows too black or too flat.** `render.shade_fill` is the share of light that reaches every bit of
+  smoke whatever shadows it (0.25 by default): raise it for softer, sky-lit shadows. `look.shade_depth`
+  only changes the contact sheets (how dark a game would take a shade of 0); match it to the game's
+  shader, not to taste.
+- **Late frames go flat white in the shade column.** Thin smoke shadows itself little, and the shade is
+  normalized over the whole run, so a fading puff ends fully lit. That is the light, not a bug.
+- **A bright rim round the smoke.** Thin smoke at the silhouette, with a light leaning toward the camera
+  (`light_dir` z above 0), is reached by light that passes beside the body, not through it. A light
+  from behind or beside (z at or below 0) puts that rim in shadow.
+- **Speckle or a dark outline at the smoke's edge.** Pixels thinner than `render.shade_fade_thickness`
+  take the shade of their neighborhood (`render.shade_neighborhood_px`, in frame pixels), and empty pixels
+  carry it too, so a game's filtering and mipmaps blend the edge into the body. Widen the neighborhood if
+  thin wisps still speckle.
