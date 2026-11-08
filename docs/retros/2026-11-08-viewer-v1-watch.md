@@ -13,7 +13,9 @@ tumble, track and dolly, plus a right-mouse free-look with eased WASD/E/Q flying
 own ray march and the contact sheets' look (Look, Heat, Thickness, Shade views, three backgrounds, guides),
 and it re-runs when the recipe or a parent is saved; a broken save shows a red banner while the last good run
 keeps playing. `plume run` is unchanged: a test pins its raw frames' bytes, and the viewer's frames are
-proved byte-identical to `plume run`'s. Window, controls and the speed targets wait for the PC run (pending).
+proved byte-identical to `plume run`'s. On the PC (2080 Ti, 1600 x 900) the window redraws 121 times a
+second while moving and 64 when still, but a whole puff run took 4.04 s against V17's 4 s, which goes to
+the user.
 
 ## Handoff
 
@@ -27,10 +29,15 @@ proved byte-identical to `plume run`'s. Window, controls and the speed targets w
   `render/frame_renderer.py` (`prepare`/`march`, `domain_view_params`, `toward_light_world`),
   `render/light_volume.py` (takes the smoke array), `render/camera.py` (`sheet_domain_view`),
   `sheet/assemble.py` (`seat_point`), `recipe/variation.py` (unreadable files are recipe errors).
-- Tests: 222 pass, 2 skip (GPU) on cloud CPU. The window was smoke-run in the cloud under `xvfb-run` with
+- Tests: 224 on cloud CPU (222 pass, 2 gpu skip). The window was smoke-run in the cloud under `xvfb-run` with
   software OpenGL (live run, playback, perspective, guides, the error banner, free-look capture, F, Home).
-- PC run (pending): the gpu tests, the raw-frame digest on Windows CPU, the window on the 2080 Ti, and V17's
-  targets (30 redraws a second while moving at 1600 x 900, a whole puff run under 4 s).
+- PC run: 224 pass with the gpu tests, none skip. Windows CPU gives other raw-frame bytes than Linux, the
+  same before and after the camera input, so both platforms are pinned. A scripted probe drove the window
+  on CUDA (the smoke puff's full grid, 1600 x 900): moving, 121 updates a second at the median (79 at the
+  95th percentile), 4.6 ms redraws at half resolution; still, 64 a second, 11.8 ms full redraws. A whole run
+  took 4.04 s once the kernels were compiled (5.33 s the first time), missing V17's 4 s by 0.04 s; an estimated
+  0.75 s of it (64 frames at 11.8 ms) is the full-size redraw of each frame as it lands. Not yet tried on
+  the PC: each control by hand, and the save re-run and error banner (all smoke-run in the cloud).
 - Next: the user's look at the viewer on the PC ends the slice; then V2 Tune (stages, the editing panel,
   Save, A/B compare). V1 runs alongside Plume slice 3, so the fireball can be judged in the viewer.
 
