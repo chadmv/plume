@@ -21,6 +21,7 @@ from plume.view.viewport import DARK_BACKGROUND, HEAT_VIEW, LOOK, SHADE_VIEW, TH
 
 WINDOW_SIZE = (1600, 900)
 MOVING_S = 0.25  # the viewport draws at half resolution until the camera has been still this long
+# and while a live run is still landing frames (so the run finishes sooner; it goes sharp once done)
 TRIM_SHOWN_S = 1.5
 SPEEDS = (0.25, 0.5, 1.0, 2.0)
 BOTTOM_BAR_PX = 64
@@ -227,7 +228,7 @@ class ViewerApp:
             if self.texture is None:
                 self._upload(np.zeros((1, 1, 4), dtype=np.uint8))
             return
-        half = now - self.moved_s < MOVING_S
+        half = now - self.moved_s < MOVING_S or not (run.done or run.stopped)
         key = (run.serial, frame, self.nav.pose(), self.view, self.background_index, half, run.heat_divisor,
                run.shade_divisor)
         if key == self.drawn_key:
