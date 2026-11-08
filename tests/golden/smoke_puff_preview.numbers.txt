@@ -5,6 +5,8 @@ frames            16
 fps               6.666667
 frame_m           1.462500
 heat_divisor      0.000000 K m
+channels          heat,thickness,shade,unused
+shade_divisor     0.991153
 peak_frame        1
 fade_frame        14
 
