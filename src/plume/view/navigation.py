@@ -209,17 +209,21 @@ class Navigation:
         """Right mouse + wheel: the fly speed's trim, x1.25 a notch."""
         self.fly_trim = _clamp(self.fly_trim * TRIM_STEP**notches, MIN_TRIM, MAX_TRIM)
 
-    def release(self, depth_m: float | None) -> None:
-        """Right mouse released: the pivot moves along the view axis, the eye staying put, to `depth_m`
-        in front of the eye (the smoke under the screen's center), or with no depth to the domain center's
-        depth when the center is in front of the eye."""
+    def release(self, hit: np.ndarray | None) -> None:
+        """Right mouse released: the pivot moves along the view axis to `hit` (the first smoke past half
+        thickness under the screen's center, a point on that axis), or with no hit to the domain center's
+        depth. In perspective the eye stays put, and a center behind the eye leaves the pose alone; in
+        orthographic the eye's place changes nothing seen, so the pivot moves and the distance stays."""
         _, _, toward = self.basis()
         eye = self.eye()
-        if depth_m is None:
-            depth_m = float((eye - self.domain_center) @ toward)
-            if depth_m <= self.nearest:
-                return
-        self.distance = _clamp(depth_m, self.nearest, self.farthest)
+        target = self.domain_center if hit is None else np.asarray(hit, dtype=np.float64)
+        depth = float((eye - target) @ toward)
+        if not self.perspective:
+            self.pivot = self.pivot + toward * float((target - self.pivot) @ toward)
+            return
+        if hit is None and depth <= self.nearest:
+            return
+        self.distance = _clamp(depth, self.nearest, self.farthest)
         self.pivot = eye - toward * self.distance
 
     # -- helpers ---------------------------------------------------------------------------------------------

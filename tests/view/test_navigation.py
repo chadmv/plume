@@ -131,15 +131,22 @@ def test_the_first_fly_key_switches_to_perspective():
     assert nav.perspective
 
 
-def test_release_puts_the_pivot_at_the_depth_found_or_the_domain_centers():
+def test_release_puts_the_pivot_on_the_hit_or_at_the_domain_centers_depth():
     nav = navigation(perspective=True)
     eye = nav.eye()
-    nav.release(1.5)
-    assert np.allclose(nav.eye(), eye) and nav.distance == 1.5
-    nav.release(None)
     _, _, toward = nav.basis()
+    nav.release(eye - toward * 1.5)
+    assert np.allclose(nav.eye(), eye) and nav.distance == pytest.approx(1.5)
+    nav.release(None)
     assert np.allclose(nav.eye(), eye)
     assert nav.distance == pytest.approx((eye - nav.domain_center) @ toward)
+    ortho = navigation()
+    _, _, toward = ortho.basis()
+    before, seen = ortho.pivot.copy(), ortho.view_camera()
+    ortho.release(before - toward * 0.3)
+    assert np.allclose(ortho.pivot, before - toward * 0.3)
+    after = ortho.view_camera()
+    assert (after.left, after.top) == pytest.approx((seen.left, seen.top))  # the picture does not move
 
 
 def test_perspective_projection_hides_points_behind_the_eye():
