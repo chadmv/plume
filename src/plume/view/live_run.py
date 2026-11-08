@@ -38,7 +38,8 @@ class LiveRun:
         self.assembled: AssembledFrames | None = None
         self.assembly_error: str | None = None
         self.elapsed_s = 0.0
-        self._started_s = time.perf_counter()
+        self.started_s = time.perf_counter()
+        self.stopped = False  # set when a recipe error stopped the run part way
         self._frames = simulate_frames(recipe, derived, device)
         self._largest_raw_heat = 0.0
         self._assembly: Future | None = None
@@ -114,7 +115,7 @@ class LiveRun:
             next(self._frames)
         except StopIteration as finished:
             self.steps = finished.value
-        self.elapsed_s = time.perf_counter() - self._started_s
+        self.elapsed_s = time.perf_counter() - self.started_s
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="plume-assemble")
         self._assembly = self._executor.submit(
             assemble, list(self.raw_frames), self.view, seat_point(self.recipe), self.recipe.output.frame_px,
