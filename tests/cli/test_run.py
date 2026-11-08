@@ -2,7 +2,12 @@ import json
 import shutil
 import tomllib
 
+import numpy as np
+import pytest
+from PIL import Image
+
 from plume.cli.main import EXIT_OK, main
+from plume.recipe.schema import NORMAL_LAYOUT, SHADE_LAYOUT
 from plume.report.numbers import read_numbers
 from support.tiny import TINY
 
@@ -11,9 +16,9 @@ OUTPUTS = ("tiny.png", "tiny.json", "contact_neutral.png", "contact_grass.png", 
            "settings.toml", "timing.txt")
 
 
-def run_tiny(tmp_path, out_name="out"):
+def run_tiny(tmp_path, out_name="out", channels=None):
     recipe = tmp_path / "tiny.toml"
-    recipe.write_text(TINY)
+    recipe.write_text(TINY if channels is None else TINY + f'channels = "{channels}"\n')
     out = tmp_path / out_name
     assert main(["run", str(recipe), "--device", "cpu", "--out", str(out)]) == EXIT_OK
     return out
@@ -38,11 +43,31 @@ def test_run_writes_every_output(tmp_path, capsys):
     assert resolved["total_steps"] == sum(resolved["steps_per_frame"])
 
 
-def test_identical_runs_write_identical_bytes(tmp_path):
+def test_the_default_sheet_holds_shade_with_alpha_255(tmp_path):
     out = run_tiny(tmp_path)
+    assert json.loads((out / "tiny.json").read_text())["channels"] == SHADE_LAYOUT
+    sheet = np.asarray(Image.open(out / "tiny.png"))
+    assert np.all(sheet[..., 3] == 255)
+    covered = sheet[..., 1] >= 128
+    assert covered.any() and sheet[covered, 2].max() > 0
+    assert read_numbers((out / "numbers.txt").read_text())[0]["channels"] == SHADE_LAYOUT
+
+
+def test_the_normal_layout_writes_normals(tmp_path):
+    out = run_tiny(tmp_path, channels=NORMAL_LAYOUT)
+    assert json.loads((out / "tiny.json").read_text())["channels"] == NORMAL_LAYOUT
+    sheet = np.asarray(Image.open(out / "tiny.png"))
+    empty = (sheet[..., 0] == 0) & (sheet[..., 1] == 0)
+    assert np.all(sheet[empty, 2:] == 128)
+    assert "shade_divisor" not in read_numbers((out / "numbers.txt").read_text())[0]
+
+
+@pytest.mark.parametrize("channels", [SHADE_LAYOUT, NORMAL_LAYOUT])
+def test_identical_runs_write_identical_bytes(tmp_path, channels):
+    out = run_tiny(tmp_path, channels=channels)
     first = tmp_path / "first"
     shutil.copytree(out, first)
-    run_tiny(tmp_path)
+    run_tiny(tmp_path, channels=channels)
     for name in OUTPUTS:
         if name != "timing.txt":
             assert (first / name).read_bytes() == (out / name).read_bytes(), name

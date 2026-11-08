@@ -128,7 +128,8 @@ def _write_outputs(out_dir: Path, recipe: Recipe, derived: Derived, device: str,
     channel_strip(frames, style).save(files["channels"], compress_level=6)
     nx, ny, nz = derived.cells
     facts = RunFacts(recipe=source, backend=device, grid=f"{nx} x {ny} x {nz} cells of {recipe.domain.cell_m:.6f} m",
-                     fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor)
+                     fps=derived.fps, frame_m=assembled.frame_m, heat_divisor=assembled.heat_divisor,
+                     channels=recipe.output.channels, shade_divisor=assembled.shade_divisor)
     numbers = numbers_text(measure(frames, derived.fps), facts)
     files["numbers"].write_text(numbers, newline="\n")
     files["settings"].write_text(recipe_to_toml(recipe, derived, device, origin, _step_facts(steps)), newline="\n")
