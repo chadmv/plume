@@ -1,10 +1,12 @@
 ---
 title: A nan recipe value passes the range rules
 type: bug
-status: open
+status: closed
 created: 2026-11-07
 priority: low
 source: slice 2 code review (T2.1)
+closed: 2026-11-07
+resolution: fixed
 ---
 
 # A nan recipe value passes the range rules
@@ -17,3 +19,6 @@ numbers when building the recipe.
 ## Related
 - `src/plume/recipe/rules.py`, `src/plume/recipe/build.py`
 - [[bug-2026-11-07-recipe-mistakes-pass-check-fail-late]]
+
+## Resolution
+Fixed with [[bug-2026-11-07-recipe-mistakes-pass-check-fail-late]]: `_number` in `recipe/build.py` rejects non-finite values, so nan never reaches the range rules.

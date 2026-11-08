@@ -24,7 +24,7 @@ def hash_u32(x: wp.uint32) -> wp.uint32:
 @wp.func
 def lattice_value(seed: int, stream: int, i: int, j: int, k: int) -> float:
     """A value in -1..1 fixed by the seed, the stream (for example the emitter's index) and the cell."""
-    h = hash_u32(wp.uint32(seed + LATTICE_OFFSET))
+    h = hash_u32(wp.uint32(seed) + wp.uint32(LATTICE_OFFSET))  # unsigned add: no signed overflow
     h = hash_u32(h ^ wp.uint32(stream + LATTICE_OFFSET))
     h = hash_u32(h ^ wp.uint32(i + LATTICE_OFFSET))
     h = hash_u32(h ^ wp.uint32(j + LATTICE_OFFSET))

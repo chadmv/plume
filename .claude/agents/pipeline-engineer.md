@@ -28,7 +28,7 @@ wrong or underspecified, stop and report rather than improvising.
   path is validated as a plain name in `recipe/rules.py` (as `check_output_name` does), with a test that
   rejects `../`.
 - **Strict loading.** Unknown keys fail with the closest valid name; wrong types and missing required
-  values fail naming the key; exit code 2 for recipe errors, 1 for anything else.
+  values fail naming the key; exit code 2 for recipe errors, 64 for usage errors, 1 for anything else.
 - **The sheet contract is fixed** (README "The sheet", spec section 5): channel encoding, frame order,
   square union crop, 2 px gutter, JSON keys in order, 2-space indent, trailing newline, floats to 6
   decimals, `source` repo-relative with forward slashes.

@@ -74,7 +74,7 @@ except `timing.txt`.
 - Security: a recipe or command-line value that becomes part of a file path must be checked as a plain
   name in `recipe/rules.py` at load time, with a test that rejects `../`. Any path built from input
   without that check is High.
-- Exit codes: 0 success, 2 recipe error, 1 anything else.
+- Exit codes: 0 success, 2 recipe error, 64 usage error (bad flag or argument), 1 anything else.
 
 ### 5. Performance
 - Host and device copies inside the substep or frame loop; `.numpy()` on a large array per substep.

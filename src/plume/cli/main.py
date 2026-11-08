@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import typing
 from pathlib import Path
 
 from plume import tool_label
@@ -13,6 +14,15 @@ from plume.sim.device import DeviceError
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_RECIPE_ERROR = 2
+EXIT_USAGE = 64  # the BSD sysexits EX_USAGE code; argparse's own 2 would read as a recipe error
+
+
+class _Parser(argparse.ArgumentParser):
+    """An argument parser whose usage errors exit with EXIT_USAGE, apart from recipe errors."""
+
+    def error(self, message: str) -> typing.NoReturn:
+        self.print_usage(sys.stderr)
+        self.exit(EXIT_USAGE, f"{self.prog}: error: {message}\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="plume", description="Fire, smoke and explosion flipbooks.")
+    parser = _Parser(prog="plume", description="Fire, smoke and explosion flipbooks.")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("version", help="print the tool's name and version")
 

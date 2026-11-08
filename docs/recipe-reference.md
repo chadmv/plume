@@ -9,7 +9,7 @@ sheets, never the sheet.
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `extends` | - | `""` | Parent recipe this one builds on, as a path relative to this file. Tables merge key by key; any other value, `[[emitter]]` included, replaces the parent's. Empty in a resolved recipe. |
-| `seed` | - | `0` | Seed for every random choice in the run. |
+| `seed` | - | `0` | Seed for every random choice in the run, from 0 to 2147483647. |
 
 ## [domain]
 
