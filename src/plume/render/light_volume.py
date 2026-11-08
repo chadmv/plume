@@ -12,7 +12,6 @@ import numpy as np
 import warp as wp
 
 from plume.render.raymarch import slab_range
-from plume.sim.grid import Grid
 from plume.sim.sample import sample_index_space
 
 
@@ -45,9 +44,8 @@ class LightVolume:
         self.opacity_per_density = opacity_per_density
         self.light = wp.zeros(cells, dtype=float, device=device)
 
-    def compute(self, grid: Grid) -> wp.array:
-        """The light reaching each cell of the grid's current smoke, 0 to 1."""
-        smoke = grid.smoke.data
+    def compute(self, smoke: wp.array, cell_m: float) -> wp.array:
+        """The light reaching each cell of a smoke field (cells of `cell_m`), 0 to 1."""
         wp.launch(light_volume_kernel, dim=smoke.shape, device=self.device,
-                  inputs=[smoke, self.toward_light, grid.info.cell_m, self.opacity_per_density, self.light])
+                  inputs=[smoke, self.toward_light, cell_m, self.opacity_per_density, self.light])
         return self.light
