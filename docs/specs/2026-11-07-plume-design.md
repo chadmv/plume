@@ -145,7 +145,8 @@ with `z = sqrt(max(0, 1 - x^2 - y^2))`. Then, in linear color:
 `color = background * (1 - G) + G * smoke_ramp(heat) * light(n) + emission_ramp(heat)`
 
 - `light(n) = ambient + (1 - ambient) * max(0, dot(n, sun_dir))`, from `[look]` (defaults: `ambient = 0.55`,
-  `sun_dir` up and to the left, toward the camera).
+  `sun_dir` up and to the left, toward the camera). Since A4, the normal layout's light; `sun_dir` is now
+  `render.light_dir`, and the shade layout lights by the baked shade (`2026-11-07-shade-channel-design.md`).
 - Ramps are lists of `[position, "#rrggbb"]` stops in sRGB, interpolated in linear. Defaults: smoke runs
   from the reference's gray-brown when cool to warm orange when hot; emission runs from black through red
   and orange to pale yellow.
@@ -227,7 +228,7 @@ Names carry units (D20); unknown keys are errors. Defaults in brackets.
 - `[output]`: `name` [recipe file stem; a plain file name, no paths], `frame_px` [256], `columns` [0, meaning
   the smallest square grid]
 - `[preview]`: `longest_axis_cells` [48], `frames` [16], `frame_px` [128]
-- `[look]`: `ambient`, `sun_dir`, `smoke_ramp`, `emission_ramp`, `contact_px` [128], `backgrounds`
+- `[look]`: `ambient`, `sun_dir` (since A4, `render.light_dir`), `smoke_ramp`, `emission_ramp`, `contact_px` [128], `backgrounds`
 
 The schema is one table in code (name, type, unit, default, description), and `docs/recipe-reference.md`
 is generated from it (D33).
