@@ -1,7 +1,7 @@
 """Pins one raw frame's bytes in both layouts, so a change to the ray march (the viewer's camera input) or
 to the light volume cannot move a sheet's bytes unnoticed.
 
-The digests were taken at commit 626d5d9, before the camera input, on Linux CPU. They pin this platform's
+The digests were taken at commit 626d5d9, before the camera input, on Linux and Windows CPU. They pin each platform's
 CPU kernels; a platform whose CPU gives other bytes needs its own digests, also taken before a change.
 """
 
@@ -21,6 +21,10 @@ DIGESTS = {
     "Linux": {
         SHADE_LAYOUT: "9a79a4edcc3e2201d481b79d6a06229d7382b8192a7a36f8b3a4ec403492f334",
         NORMAL_LAYOUT: "8e2bf0959a8e48642b880cab48a2ff6360ad40ad013434f0a9689e121dc9711f",
+    },
+    "Windows": {
+        SHADE_LAYOUT: "e1f58f09fc3fad5a2c3272fa26826a094a29f920df344ea4763c6993f5ef0197",
+        NORMAL_LAYOUT: "16e46acf4b0bedd7eb88b409e076c2f15fb9d194bb418d64fd15afe4947c9e6c",
     },
 }
 
