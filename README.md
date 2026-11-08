@@ -29,7 +29,9 @@ One RGBA PNG per flipbook, frames in rows, left to right and top to bottom. 8-bi
 | --- | --- |
 | R | heat (glow), normalized to the hottest frame of the sequence |
 | G | thickness: smoke opacity, use as alpha |
-| B, A | camera-space normal x and y of the smoke surface, -1..1 mapped to 0..255; +x right, +y up; rebuild z as `sqrt(1 - x^2 - y^2)` |
+| B, A | by layout, named in the JSON's `channels` (the recipe's `output.channels`): |
+| | `heat,thickness,shade,unused` (the default): B is the shade, how lit the smoke is by the key light (`render.light_dir`) with its own shadow baked in, 1 for the brightest well-covered smoke of the run; A is 255 |
+| | `heat,thickness,normal_x,normal_y`: B and A are the camera-space normal x and y of the smoke surface, -1..1 mapped to 0..255; +x right, +y up; rebuild z as `sqrt(1 - x^2 - y^2)` |
 
 Every frame is cropped to the union of all frames' bounds (a square), with at least 2 empty pixels at
 each edge. The JSON beside the sheet holds `frames`, `columns`, `frame_px`, `fps`, `frame_m` (frame width
@@ -40,8 +42,11 @@ The contact sheets composite each frame with the reference formula a game shader
 light, premultiplied):
 
 ```
-color = background * (1 - G) + G * smoke_ramp(heat) * light(normal) + emission_ramp(heat)
+color = background * (1 - G) + G * smoke_ramp(heat) * light + emission_ramp(heat)
 ```
+
+with `light = 1 - shade_depth * (1 - shade)` in the shade layout and
+`light = ambient + (1 - ambient) * max(0, normal . light_dir)` in the normal layout.
 
 ### Godot import settings
 

@@ -1,7 +1,7 @@
+import dataclasses
+
 import numpy as np
 import pytest
-
-import dataclasses
 
 from plume.recipe.schema import NORMAL_LAYOUT, SHADE_LAYOUT, BackgroundSettings, LookSettings
 from plume.report.channels import channel_strip, strip_frame_indices

@@ -8,6 +8,8 @@ from plume.recipe.schema import SHADE_LAYOUT, RenderSettings
 from plume.render.camera import make_camera, make_domain_view
 from plume.render.raw_frame import CHANNELS, SHADE, THICKNESS
 from plume.sheet.assemble import assemble
+from plume.sheet.crop import CropSquare
+from plume.sheet.resample import resample_frame
 from plume.sheet.shade import ease_thin_pixels, shade_divisor
 
 VIEW = make_domain_view(make_camera(0.0, 0.0), (-1.0, 0.0, -1.0), (2.0, 2.0, 2.0), 0.0625, 2.0)  # 64 px
@@ -60,8 +62,8 @@ def test_a_speckled_thin_halo_is_smooth_and_no_darker_than_the_shaded_side():
     dense = thickness >= SETTINGS.shade_fade_thickness
     halo = (thickness > 0.0) & ~dense
     assert halo.any()
-    # Measured: eased, the halo's darkest byte is 92 against the ball's darkest 88, and neighboring halo
-    # bytes differ by at most 30; without easing they are 0 and 156 (a black outline and the speckle).
+    # Measured: eased, the halo's darkest byte is 103 against the ball's darkest 91, and neighboring halo
+    # bytes differ by at most 15; without easing they are 55 and 108 (a dark outline and the speckle).
     assert shade[halo].min() >= shade[dense].min() - 8
     neighbors = halo[:, 1:] & halo[:, :-1]
     assert np.abs(np.diff(shade, axis=1))[neighbors].max() <= 48
@@ -90,3 +92,11 @@ def test_divisor_falls_back_when_nothing_is_well_covered():
     thin[1, 1, SHADE] = 0.5
     assert shade_divisor([thin], 0.1) == pytest.approx(0.5)  # shade_divisor reads eased (plain) shade
     assert shade_divisor([np.zeros((4, 4, CHANNELS))], 0.1) == 1.0
+
+
+def test_resampling_keeps_shade_within_its_thickness():
+    # Shrinking a hard-edged ball rings (bicubic); the weighted shade must stay between 0 and the thickness.
+    frame = resample_frame(lit_ball(speckled_halo=True), CropSquare(left=3.3, top=2.7, side=57.0), 40,
+                           SHADE_LAYOUT)
+    assert np.all(frame[..., SHADE] >= 0.0)
+    assert np.all(frame[..., SHADE] <= frame[..., THICKNESS])

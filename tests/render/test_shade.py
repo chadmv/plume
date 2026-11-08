@@ -42,6 +42,16 @@ def test_a_sphere_lit_from_the_left_is_darker_on_its_right(cpu_device):
     assert left > right + 0.2
 
 
+def test_a_sphere_lit_from_above_seen_from_above_the_horizon_is_darker_below(cpu_device):
+    # Elevation 30 and a light straight up in camera space exercise the up and toward terms of the
+    # camera-to-world light direction (the left-lit case multiplies them by 0). Measured: top 0.79, bottom 0.45.
+    _, image = render(smoke_sphere(cpu_device), elevation_deg=30.0, channels=SHADE_LAYOUT, light_dir=(0.0, 1.0, 0.0))
+    covered = image[..., THICKNESS] > 0.5
+    shade = np.where(covered, image[..., SHADE] / np.maximum(image[..., THICKNESS], 0.5), np.nan)
+    top, bottom = float(np.nanmean(shade[:16])), float(np.nanmean(shade[16:]))
+    assert top > bottom + 0.2
+
+
 def test_full_fill_casts_no_shadow(cpu_device):
     _, image = render(smoke_sphere(cpu_device), channels=SHADE_LAYOUT, light_dir=LEFT, shade_fill=1.0)
     covered = image[..., THICKNESS] > 0.0

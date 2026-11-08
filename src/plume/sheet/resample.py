@@ -18,11 +18,11 @@ def resample_frame(raw: np.ndarray, crop: CropSquare, frame_px: int, channels: s
     padded, shift = _pad_to_cover(raw, crop, channels)
     left, top, right, bottom = crop.box()
     box = (left + shift, top + shift, right + shift, bottom + shift)
-    channels = []
+    planes = []
     for channel in range(CHANNELS):
         image = Image.fromarray(np.ascontiguousarray(padded[..., channel], dtype=np.float32))
-        channels.append(np.asarray(image.resize((frame_px, frame_px), Image.Resampling.BICUBIC, box=box)))
-    frame = np.stack(channels, axis=-1).astype(np.float64)
+        planes.append(np.asarray(image.resize((frame_px, frame_px), Image.Resampling.BICUBIC, box=box)))
+    frame = np.stack(planes, axis=-1).astype(np.float64)
     frame[..., THICKNESS] = np.clip(frame[..., THICKNESS], 0.0, 1.0)
     frame[..., HEAT] = np.maximum(frame[..., HEAT], 0.0)
     if channels == SHADE_LAYOUT:

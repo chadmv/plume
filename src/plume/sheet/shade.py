@@ -42,7 +42,6 @@ def ease_thin_pixels(frame: np.ndarray, fade_thickness: float, neighborhood_px: 
     return result
 
 
-
 def shade_divisor(frames: list[np.ndarray], fade_thickness: float) -> float:
     """The largest shade of any pixel at least `fade_thickness` thick in the run.
 

@@ -75,9 +75,9 @@ whenever a run teaches something.
   shader, not to taste.
 - **Late frames go flat white in the shade column.** Thin smoke shadows itself little, and the shade is
   normalized over the whole run, so a fading puff ends fully lit. That is the light, not a bug.
-- **A bright rim round the smoke.** Thin smoke at the silhouette, with a light leaning toward the camera
+- **A bright rim around the smoke.** Thin smoke at the silhouette, with a light leaning toward the camera
   (`light_dir` z above 0), is reached by light that passes beside the body, not through it. The smoke
-  puff's default light shows it on the lit side and faintly round the shaded side.
+  puff's default light shows it on the lit side and faintly around the shaded side.
 - **Speckle or a dark outline at the smoke's edge.** Pixels thinner than `render.shade_fade_thickness`
   take the shade of their neighborhood (`render.shade_neighborhood_px`, in frame pixels), and empty pixels
   carry it too, so a game's filtering and mipmaps blend the edge into the body. Widen the neighborhood if
