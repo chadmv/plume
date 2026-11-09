@@ -18,7 +18,8 @@ a test proves the saved recipe resolves to exactly what the viewer was showing, 
 the same look. **Compare** (`C`) flips to the run before the last change at the same frame and camera,
 **Split** shows both side by side, and the panel lists the keys that differ. The light arrow's tip can be
 dragged to move the key light. `plume run`'s outputs are unchanged. Cloud: 274 tests pass (2 gpu tests skip) and
-the window was smoke-run under `xvfb-run`; the PC run (gpu tests, the controls by hand) is still to do.
+the window was smoke-run under `xvfb-run`. PC (2080 Ti): 275 pass with the gpu tests; the one failure was a new
+test assuming POSIX file modes, now fixed. Trying the controls by hand on the PC is still to do.
 
 ## Handoff
 
@@ -34,7 +35,8 @@ the window was smoke-run under `xvfb-run`; the PC run (gpu tests, the controls b
   (each reader widens into its own pair), `view/live_run.py` (re-capture), `view/session.py` (edits,
   stages, A and B, Save), `view/app.py` (panel, Compare, Split, light drag), `view/guides.py` (light drag
   math).
-- Not yet done: the PC run (TV2.9): `uv sync --extra view`, `uv run pytest` with the gpu tests, then
+- PC run 2026-11-09 at de3f364: 275 pass, 1 fail (a new test assumed POSIX file modes; fixed to compare the mode
+  read back), gpu tests ran on the 2080 Ti. Not yet done: on the PC
   `uv run plume view recipes/smoke_puff.toml` by hand: drag a render value and a simulation value, Compare,
   Split, drag the light arrow, Save. The user's look at it on the PC ends the slice.
 - Next: V3 Inspect (the Sheet tab and `plume view OUT_DIR`, the numbers strip, the slice plane, clips and

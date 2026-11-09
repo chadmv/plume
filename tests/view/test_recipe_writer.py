@@ -159,11 +159,12 @@ def test_a_save_keeps_the_files_permissions_and_a_symlink(tmp_path):
     target = tmp_path / "real.toml"
     target.write_text(COMMENTED)
     target.chmod(0o644)
+    mode = target.stat().st_mode  # read back: Windows keeps only the read-only bit, so 0o644 reads as 0o666
     link = tmp_path / "link.toml"
     link.symlink_to(target)
     save(link, {"seed": 4})
     assert link.is_symlink() and load_recipe(target).seed == 4
-    assert target.stat().st_mode & 0o777 == 0o644
+    assert target.stat().st_mode == mode
 
 
 def test_a_file_that_is_not_valid_toml_is_refused(tmp_path):
