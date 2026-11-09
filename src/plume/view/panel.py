@@ -1,7 +1,8 @@
 """The right panel (V13): Save and Revert, Compare and Split with the keys A and B differ in, and every
 recipe key grouped by table. Defaults are dimmed, keys the recipe sets are plain, keys changed in the viewer
-are highlighted with a Reset. A field's edit applies when it is let go (or on Enter), checked by `plume
-check`'s rules first; a rejected edit shows the check's message beside the field.
+are highlighted with a Reset. A number is dragged, or clicked (without dragging) to type it. A field's edit
+applies when it is let go (or on Enter), checked by `plume check`'s rules first; a rejected edit shows the
+check's message beside the field.
 """
 
 from imgui_bundle import imgui

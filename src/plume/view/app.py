@@ -526,6 +526,7 @@ class ViewerApp:
     def _post_init(self) -> None:
         io = imgui.get_io()
         io.config_flags &= ~imgui.ConfigFlags_.nav_enable_keyboard  # Space and the arrows belong to the viewer
+        io.config_drag_click_to_input_text = True  # a click on a panel number (no drag) opens it for typing
 
     def _before_exit(self) -> None:
         textures = [texture for texture in self.textures if texture is not None]

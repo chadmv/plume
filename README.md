@@ -73,8 +73,8 @@ will. Save the recipe (or a parent it `extends`) and the viewer re-runs it; a re
 banner and the last good run keeps playing. The sheet itself still comes only from `plume run`.
 
 **Tuning.** The right panel lists every recipe key by table: dimmed keys are defaults, plain keys are set by
-the recipe, highlighted keys are changed in the viewer (each with a Reset). Drag a number (Ctrl + click to
-type), pick a choice or type text; the change applies when you let go, after the same checks as `plume
+the recipe, highlighted keys are changed in the viewer (each with a Reset). Click a number to type it (Enter
+applies) or drag it, pick a choice or type text; the change applies when you let go, after the same checks as `plume
 check` (a rejected value shows the message beside the field). What it does depends on the key's table, its
 stage in `docs/recipe-reference.md`: a simulation key re-runs from time 0, a `[render]`, `[camera]` or
 `[output]` key redraws from the kept frames, a `[look]` key only redraws. Ramps, colors and emitter names are
