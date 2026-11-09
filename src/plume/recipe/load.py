@@ -24,10 +24,16 @@ def load_recipe_with_origin(path: Path, preview: bool = False,
                             sets: tuple[str, ...] = ()) -> tuple[Recipe, RecipeOrigin]:
     """The fully resolved recipe at `path`, and the parents and overrides that shaped it."""
     table, chain = resolve_extends(read_toml(path), path)
-    recipe = parse_recipe(apply_sets(table, tuple(sets)))
+    recipe = resolve_table(apply_sets(table, tuple(sets)), path.stem, preview)
+    return recipe, RecipeOrigin(extends_chain=chain, sets=tuple(sets))
+
+
+def resolve_table(table: dict, recipe_stem: str, preview: bool = False) -> Recipe:
+    """The fully resolved recipe of a merged table (parents and overrides already applied)."""
+    recipe = parse_recipe(table)
     if preview:
         recipe = apply_preview(recipe)
-    return fill_dependent_defaults(recipe, path.stem), RecipeOrigin(extends_chain=chain, sets=tuple(sets))
+    return fill_dependent_defaults(recipe, recipe_stem)
 
 
 def parse_recipe(table: dict) -> Recipe:
