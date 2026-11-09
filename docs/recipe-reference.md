@@ -2,9 +2,12 @@
 
 Generated from `src/plume/recipe/schema.py` by `uv run python -m plume.recipe.reference`; do not edit by
 hand. Every key carries its unit in its name. Unknown keys are errors. `[look]` only changes the contact
-sheets, never the sheet.
+sheets, never the sheet. Each table's stage says what a change to its keys does in the live viewer
+(`plume view`); `plume run` always runs the whole recipe.
 
 ## Top level
+
+Stage: `simulation` (a change re-runs the simulation from time 0).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -15,6 +18,8 @@ sheets, never the sheet.
 
 The simulation box.
 
+Stage: `simulation` (a change re-runs the simulation from time 0).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `size_m` | m | required | Width, height and depth of the simulation box. Its origin is the center of the floor. |
@@ -24,6 +29,8 @@ The simulation box.
 ## [domain.faces]
 
 Each face of the box is `closed` (a solid wall) or `open` (material leaves freely).
+
+Stage: `simulation` (a change re-runs the simulation from time 0).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -38,6 +45,8 @@ Each face of the box is `closed` (a solid wall) or `open` (material leaves freel
 
 Effect time and frames.
 
+Stage: `simulation` (a change re-runs the simulation from time 0).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `duration_s` | s | required | Effect time covered by the flipbook. |
@@ -48,6 +57,8 @@ Effect time and frames.
 ## [[emitter]]
 
 Sources of smoke, heat and motion.
+
+Stage: `simulation` (a change re-runs the simulation from time 0).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -68,6 +79,8 @@ Sources of smoke, heat and motion.
 
 Seeded breakup of the emitter's shape.
 
+Stage: `simulation` (a change re-runs the simulation from time 0).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `scale_m` | m | `0.1` | Size of the emitter's breakup pattern. |
@@ -76,6 +89,8 @@ Seeded breakup of the emitter's shape.
 ## [forces]
 
 Forces on the gas.
+
+Stage: `simulation` (a change re-runs the simulation from time 0).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -90,6 +105,8 @@ Forces on the gas.
 
 Seeded curl-noise swirls, in meters, so previews match.
 
+Stage: `simulation` (a change re-runs the simulation from time 0).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `scale_m` | m | `0.3` | Size of the swirls. |
@@ -100,6 +117,8 @@ Seeded curl-noise swirls, in meters, so previews match.
 
 How smoke and heat fade.
 
+Stage: `simulation` (a change re-runs the simulation from time 0).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `smoke_per_s` | 1/s | `0.0` | Rate smoke fades. |
@@ -108,6 +127,8 @@ How smoke and heat fade.
 ## [solver]
 
 Solver controls.
+
+Stage: `simulation` (a change re-runs the simulation from time 0).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -122,6 +143,8 @@ Solver controls.
 
 The orthographic camera.
 
+Stage: `sheet` (a change re-assembles the sheet from the kept frames; no re-run).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `elevation_deg` | deg | `0.0` | How far the camera looks down; 0 is a level side view. |
@@ -131,6 +154,8 @@ The orthographic camera.
 ## [render]
 
 Turning the volume into sheet channels.
+
+Stage: `render` (a change redraws from the kept frames; no re-run).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -151,6 +176,8 @@ Turning the volume into sheet channels.
 
 The sheet's size and name.
 
+Stage: `sheet` (a change re-assembles the sheet from the kept frames; no re-run).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `name` | - | `""` | Output name; empty means the recipe file's name. |
@@ -162,6 +189,8 @@ The sheet's size and name.
 
 Overrides used by --preview.
 
+Stage: `preview` (a change acts through the tables it overrides, and only under --preview).
+
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
 | `longest_axis_cells` | cells | `48` | Cells along the domain's longest axis in --preview. |
@@ -171,6 +200,8 @@ Overrides used by --preview.
 ## [look]
 
 Contact sheet colors; never affects the sheet.
+
+Stage: `look` (a change redraws only).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |
@@ -183,6 +214,8 @@ Contact sheet colors; never affects the sheet.
 ## [look.backgrounds]
 
 Contact sheet backgrounds.
+
+Stage: `look` (a change redraws only).
 
 | key | unit | default | meaning |
 | --- | --- | --- | --- |

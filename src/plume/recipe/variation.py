@@ -97,11 +97,26 @@ def apply_sets(table: dict, sets: tuple[str, ...]) -> dict:
     """
     result = copy.deepcopy(table)
     for item in sets:
-        key, value = _split_set(item)
-        if key == "extends":
-            raise RecipeError("--set cannot change extends; parents are merged before --set applies. Write "
-                              "extends in the recipe instead")
-        _set_value(result, key, _parse_value(value), item)
+        key, value = set_item(item)
+        _set_value(result, key, value, f"--set {item!r}")
+    return result
+
+
+def set_item(item: str) -> tuple[str, Any]:
+    """Parses one `--set key=value` item into its key and TOML value."""
+    key, value = _split_set(item)
+    if key == "extends":
+        raise RecipeError("--set cannot change extends; parents are merged before --set applies. Write "
+                          "extends in the recipe instead")
+    return key, _parse_value(value)
+
+
+def apply_values(table: dict, values: dict[str, Any]) -> dict:
+    """A copy of a parsed recipe table with each dotted key set to its TOML value, in order, by the key rules
+    of `apply_sets` (the viewer's edits)."""
+    result = copy.deepcopy(table)
+    for key, value in values.items():
+        _set_value(result, key, copy.deepcopy(value), f"edit {key}")
     return result
 
 
@@ -120,50 +135,50 @@ def _parse_value(text: str) -> Any:
         return text
 
 
-def _set_value(table: dict, key: str, value: Any, item: str) -> None:
+def _set_value(table: dict, key: str, value: Any, label: str) -> None:
     parts = key.split(".")
     target = table
     index = 0
     while index < len(parts) - 1:
         part = parts[index]
         if part == "emitter" or EMITTER_BY_INDEX.match(part):
-            target, index = _emitter_table(table, parts, index, item)
+            target, index = _emitter_table(table, parts, index, label)
             continue
         child = target.get(part)
         if child is None:
             child = {}
             target[part] = child
         if not isinstance(child, dict):
-            raise RecipeError(f"--set {item!r}: {'.'.join(parts[:index + 1])} is a value, not a table")
+            raise RecipeError(f"{label}: {'.'.join(parts[:index + 1])} is a value, not a table")
         target = child
         index += 1
     target[parts[-1]] = value
 
 
-def _emitter_table(table: dict, parts: list[str], index: int, item: str) -> tuple[dict, int]:
+def _emitter_table(table: dict, parts: list[str], index: int, label: str) -> tuple[dict, int]:
     """The emitter table a --set key names, and the index of the key part after the emitter."""
     emitters = table.get("emitter")
     if not isinstance(emitters, list) or not emitters:
-        raise RecipeError(f"--set {item!r}: the recipe has no [[emitter]]")
+        raise RecipeError(f"{label}: the recipe has no [[emitter]]")
     match = EMITTER_BY_INDEX.match(parts[index])
     if match:
         position = int(match.group(1))
         if position >= len(emitters):
-            raise RecipeError(f"--set {item!r}: emitter[{position}] does not exist; the recipe has "
+            raise RecipeError(f"{label}: emitter[{position}] does not exist; the recipe has "
                               f"{len(emitters)}")
-        return _emitter_at(emitters, position, item), index + 1
+        return _emitter_at(emitters, position, label), index + 1
     if len(parts) < index + 3:
-        raise RecipeError(f"--set {item!r}: name the emitter, as emitter.<name>.<key> or emitter[0].<key>")
+        raise RecipeError(f"{label}: name the emitter, as emitter.<name>.<key> or emitter[0].<key>")
     name = parts[index + 1]
     names = [e.get("name") if isinstance(e, dict) else None for e in emitters]
     if name not in names:
-        raise RecipeError(f"--set {item!r}: no emitter is named {name!r}; emitters are "
+        raise RecipeError(f"{label}: no emitter is named {name!r}; emitters are "
                           f"{', '.join(str(n) for n in names)}")
-    return _emitter_at(emitters, names.index(name), item), index + 2
+    return _emitter_at(emitters, names.index(name), label), index + 2
 
 
-def _emitter_at(emitters: list, position: int, item: str) -> dict:
+def _emitter_at(emitters: list, position: int, label: str) -> dict:
     emitter = emitters[position]
     if not isinstance(emitter, dict):
-        raise RecipeError(f"--set {item!r}: emitter[{position}] is not a table")
+        raise RecipeError(f"{label}: emitter[{position}] is not a table")
     return emitter

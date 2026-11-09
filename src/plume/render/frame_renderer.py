@@ -38,8 +38,13 @@ class FrameRenderer:
     def render(self, grid: Grid) -> np.ndarray:
         """The raw frame image of the grid's current smoke and temperature over the domain view, copied to
         the host."""
-        self.prepare(grid.smoke.data, grid.info.cell_m)
-        self.march(grid.smoke.data, grid.temperature.data, grid.info, self.view_params, self.image)
+        return self.render_fields(grid.smoke.data, grid.temperature.data, grid.info)
+
+    def render_fields(self, smoke: wp.array, temperature: wp.array, info: GridInfo) -> np.ndarray:
+        """The raw frame image of these fields over the domain view, copied to the host (`render` for a grid;
+        the viewer's re-capture for kept frames)."""
+        self.prepare(smoke, info.cell_m)
+        self.march(smoke, temperature, info, self.view_params, self.image)
         return self.image.numpy().copy()
 
     def prepare(self, smoke: wp.array, cell_m: float) -> None:

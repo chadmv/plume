@@ -3,7 +3,8 @@
 A budget in bytes bounds the cache. The stride is chosen before a run from the frame count and grid size:
 every frame when they fit, else every second, then every fourth frame, and so on; playback skips the
 frames that were not kept, never interpolating. Drawing a frame widens it into 32-bit scratch arrays,
-since the ray march reads 32-bit fields.
+since the ray march reads 32-bit fields; each reader (a viewport, a re-capture) owns its pair, since one
+cache can be read by the A and B views and a re-capture at once.
 """
 
 import math
@@ -43,15 +44,15 @@ def frame_stride(frames: int, cells: tuple[int, int, int], budget_bytes: float) 
 class FrameCache:
     """Kept frames of one run, filled in frame order as the run lands them."""
 
-    def __init__(self, cells: tuple[int, int, int], frames: int, budget_bytes: float, device: str):
+    def __init__(self, cells: tuple[int, int, int], frames: int, budget_bytes: float, device: str,
+                 shared_with_compare: bool = False):
         self.cells = cells
         self.frames = frames
         self.budget_bytes = budget_bytes
         self.device = device
+        self.shared_with_compare = shared_with_compare  # the budget is what the Compare run left
         self.stride = frame_stride(frames, cells, budget_bytes)
         self._stored: dict[int, tuple[wp.array, wp.array]] = {}
-        self._smoke = wp.zeros(cells, dtype=float, device=device)
-        self._temperature = wp.zeros(cells, dtype=float, device=device)
 
     def keeps(self, frame: int) -> bool:
         """Whether this run keeps `frame` at its stride."""
@@ -78,12 +79,27 @@ class FrameCache:
         earlier = [index for index in kept if index <= frame]
         return earlier[-1] if earlier else kept[0]
 
-    def load(self, frame: int) -> tuple[wp.array, wp.array]:
-        """A stored frame's smoke and temperature widened to 32 bits, in scratch arrays that the next load
-        overwrites."""
-        for source, target in zip(self._stored[frame], (self._smoke, self._temperature), strict=True):
+    @property
+    def stored_bytes(self) -> int:
+        """Device bytes the kept frames take."""
+        return len(self._stored) * frame_bytes(self.cells)
+
+    @property
+    def thinned(self) -> bool:
+        """Whether the budget made the cache skip frames."""
+        return self.stride > 1
+
+    def scratch(self) -> tuple[wp.array, wp.array]:
+        """A 32-bit smoke and temperature pair for one reader's loads."""
+        return (wp.zeros(self.cells, dtype=float, device=self.device),
+                wp.zeros(self.cells, dtype=float, device=self.device))
+
+    def load(self, frame: int, into: tuple[wp.array, wp.array]) -> tuple[wp.array, wp.array]:
+        """A stored frame's smoke and temperature widened to 32 bits into the reader's `into` pair (from
+        `scratch`), which the reader's next load overwrites."""
+        for source, target in zip(self._stored[frame], into, strict=True):
             wp.launch(widen_kernel, dim=self.cells, device=self.device, inputs=[source, target])
-        return self._smoke, self._temperature
+        return into
 
     def stored_smoke(self, frame: int) -> wp.array:
         """The 16-bit smoke as stored, for tests and host-side reads."""
@@ -94,8 +110,9 @@ class FrameCache:
         if self.stride == 1:
             return None
         gigabytes = self.budget_bytes / 2**30
+        room = ("the room the Compare run leaves of --cache-gb" if self.shared_with_compare else "--cache-gb")
         return (f"frame cache keeps every {_ordinal(self.stride)} frame: {self.frames} frames at "
-                f"{frame_bytes(self.cells) / 2**20:.1f} MB each do not fit {gigabytes:g} GB (--cache-gb)")
+                f"{frame_bytes(self.cells) / 2**20:.1f} MB each do not fit {gigabytes:.3g} GB ({room})")
 
 
 def _ordinal(number: int) -> str:

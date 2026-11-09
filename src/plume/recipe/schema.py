@@ -25,18 +25,36 @@ CHANNEL_LAYOUTS = (SHADE_LAYOUT, NORMAL_LAYOUT)
 # Keys that moved to another table: an old recipe that sets one is told where it went.
 MOVED_KEYS = {"look.sun_dir": "render.light_dir"}
 
+# What a change to a key does in the live viewer (`plume view`). Each top-level table and key carries one stage; a nested
+# key inherits its top-level table's stage.
+SIMULATION_STAGE = "simulation"
+RENDER_STAGE = "render"
+SHEET_STAGE = "sheet"
+LOOK_STAGE = "look"
+PREVIEW_STAGE = "preview"
+STAGES = {
+    SIMULATION_STAGE: "a change re-runs the simulation from time 0",
+    RENDER_STAGE: "a change redraws from the kept frames; no re-run",
+    SHEET_STAGE: "a change re-assembles the sheet from the kept frames; no re-run",
+    LOOK_STAGE: "a change redraws only",
+    PREVIEW_STAGE: "a change acts through the tables it overrides, and only under --preview",
+}
 
-def setting(default: Any, unit: str, doc: str, choices: tuple[str, ...] = ()) -> Any:
-    """Declares one recipe key. Pass `REQUIRED` as the default for a key the recipe must give."""
-    metadata = {"unit": unit, "doc": doc, "choices": choices}
+
+def setting(default: Any, unit: str, doc: str, choices: tuple[str, ...] = (), stage: str = "") -> Any:
+    """Declares one recipe key. Pass `REQUIRED` as the default for a key the recipe must give. A top-level
+    key names its `stage`; a key inside a table takes its table's."""
+    metadata = {"unit": unit, "doc": doc, "choices": choices, "stage": stage}
     if isinstance(default, (list, dict)):
         raise TypeError("use tuples for sequence defaults so settings stay immutable")
     return dataclasses.field(default=default, metadata=metadata)
 
 
-def section(doc: str) -> Any:
-    """Declares a nested table. The loader always builds it, from an empty table when absent."""
-    return dataclasses.field(default=None, metadata={"unit": "", "doc": doc, "choices": (), "section": True})
+def section(doc: str, stage: str = "") -> Any:
+    """Declares a nested table. The loader always builds it, from an empty table when absent. A top-level
+    table names its `stage`."""
+    return dataclasses.field(default=None, metadata={"unit": "", "doc": doc, "choices": (), "section": True,
+                                                      "stage": stage})
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -211,26 +229,37 @@ class LookSettings:
 class Recipe:
     extends: str = setting("", "", "Parent recipe this one builds on, as a path relative to this file. Tables "
                                    "merge key by key; any other value, `[[emitter]]` included, replaces the "
-                                   "parent's. Empty in a resolved recipe.")
-    seed: int = setting(0, "", f"Seed for every random choice in the run, from 0 to {SEED_MAX}.")
-    domain: DomainSettings = section("The simulation box.")
-    time: TimeSettings = section("Effect time and frames.")
-    emitter: tuple[EmitterSettings, ...] = setting(REQUIRED, "", "Sources of smoke, heat and motion.")
-    forces: ForceSettings = section("Forces on the gas.")
-    dissipation: DissipationSettings = section("How smoke and heat fade.")
-    solver: SolverSettings = section("Solver controls.")
-    camera: CameraSettings = section("The orthographic camera.")
-    render: RenderSettings = section("Turning the volume into sheet channels.")
-    output: OutputSettings = section("The sheet's size and name.")
-    preview: PreviewSettings = section("Overrides used by --preview.")
-    look: LookSettings = section("Contact sheet colors; never affects the sheet.")
+                                   "parent's. Empty in a resolved recipe.", stage=SIMULATION_STAGE)
+    seed: int = setting(0, "", f"Seed for every random choice in the run, from 0 to {SEED_MAX}.",
+                        stage=SIMULATION_STAGE)
+    domain: DomainSettings = section("The simulation box.", SIMULATION_STAGE)
+    time: TimeSettings = section("Effect time and frames.", SIMULATION_STAGE)
+    emitter: tuple[EmitterSettings, ...] = setting(REQUIRED, "", "Sources of smoke, heat and motion.",
+                                                   stage=SIMULATION_STAGE)
+    forces: ForceSettings = section("Forces on the gas.", SIMULATION_STAGE)
+    dissipation: DissipationSettings = section("How smoke and heat fade.", SIMULATION_STAGE)
+    solver: SolverSettings = section("Solver controls.", SIMULATION_STAGE)
+    camera: CameraSettings = section("The orthographic camera.", SHEET_STAGE)
+    render: RenderSettings = section("Turning the volume into sheet channels.", RENDER_STAGE)
+    output: OutputSettings = section("The sheet's size and name.", SHEET_STAGE)
+    preview: PreviewSettings = section("Overrides used by --preview.", PREVIEW_STAGE)
+    look: LookSettings = section("Contact sheet colors; never affects the sheet.", LOOK_STAGE)
 
 
 def field_info(field: dataclasses.Field) -> dict[str, Any]:
-    """The unit, description, allowed choices and section flag of a schema field."""
+    """The unit, description, allowed choices, section flag and stage of a schema field."""
     return {
         "unit": field.metadata.get("unit", ""),
         "doc": field.metadata.get("doc", ""),
         "choices": field.metadata.get("choices", ()),
         "section": field.metadata.get("section", False),
+        "stage": field.metadata.get("stage", ""),
     }
+
+
+def stage_of(key_path: str) -> str:
+    """The stage of a dotted key path (`forces.turbulence.scale_m`, `emitter.puff.radius_m`, `seed`): its
+    top-level table's or key's. Raises KeyError for a path that names no top-level field."""
+    top = key_path.split(".", 1)[0].split("[", 1)[0]
+    fields = {field.name: field for field in dataclasses.fields(Recipe)}
+    return field_info(fields[top])["stage"]

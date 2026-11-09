@@ -82,3 +82,30 @@ def test_screen_segments_are_clipped_to_the_viewport_before_dashing():
         if ends is not None:
             pieces += len(dashes(*ends))
     assert pieces < 2000  # unclipped, the edges near the eye split into tens of thousands of dashes
+
+
+def test_the_light_arrow_turns_with_the_mouse_and_maps_back_to_camera_space():
+    from plume.render.camera import make_camera
+    from plume.render.frame_renderer import toward_light_world
+    from plume.view.guides import light_arrow_span, light_dir_in_camera, turn_light
+
+    recipe = tiny_recipe()
+    derived = derive(recipe)
+    nav = Navigation(derived.domain_min_m, derived.size_m)
+    nav.set_viewport(400, 300)
+    nav.home(20.0, 30.0, (0.0, 0.75), (1.0, 1.0))
+    camera = nav.view_camera()
+    sheet_camera = make_camera(20.0, 30.0)
+    light_dir = np.array([-0.5, 0.7, 0.5])
+    world = toward_light_world(sheet_camera, light_dir)
+    world /= np.linalg.norm(world)
+
+    assert np.allclose(turn_light(world, 0.0, 0.0, camera, derived), world)
+    assert np.allclose(light_dir_in_camera(world, sheet_camera, float(np.linalg.norm(light_dir))), light_dir)
+
+    origin, length = light_arrow_span(derived)
+    before = camera.project(origin + world * length)
+    turned = turn_light(world, 10.0, -5.0, camera, derived)
+    after = camera.project(origin + turned * length)
+    assert np.isclose(np.linalg.norm(turned), 1.0)
+    assert after[0] > before[0] and after[1] < before[1]  # the tip went right and up, with the mouse
