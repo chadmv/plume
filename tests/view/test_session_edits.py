@@ -234,3 +234,52 @@ def test_a_file_error_is_not_blamed_on_the_edits_and_an_edit_does_not_hide_it(cp
     assert session.error is not None and "unsaved viewer edits" not in session.error
     session.edit("look.shade_depth", 0.4)
     assert session.error is not None
+
+
+def test_nudging_the_same_key_again_keeps_b_and_another_key_moves_it(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    finish(session)
+    first = session.run
+    session.edit("look.shade_depth", 0.5)
+    session.edit("look.shade_depth", 0.4)
+    session.edit("look.shade_depth", 0.3)
+    assert session.compare.run is first and session.compare.recipe.look.shade_depth != 0.4
+    assert session.compare_differences() == ["look.shade_depth"]
+    nudged = session.viewport
+    session.edit("render.soften_px", 1.0)
+    assert session.compare.viewport is nudged  # another key: A became B
+
+
+def test_a_render_nudge_keeps_b_and_re_captures_from_the_nudge_before(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    finish(session)
+    first = session.run
+    session.edit("render.soften_px", 1.0)
+    middle = session.run
+    while middle.capturing:
+        session.advance()
+    session.edit("render.soften_px", 1.5)  # before the middle re-capture's sheet assembly has landed
+    assert session.compare.run is first and session.run.source is middle
+    middle.wait_for_assembly()
+    assert middle.assembled is not None  # the new re-capture reads its divisors until its own land
+    finish(session)
+    assert session.run.assembled is not None
+
+
+def test_hold_b_keeps_b_through_other_keys_and_save_starts_afresh(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    finish(session)
+    first = session.run
+    session.hold_b = True
+    session.edit("look.shade_depth", 0.5)  # no B yet: the change makes one
+    held = session.compare
+    session.edit("forces.drag_per_s", 0.3)
+    finish(session)
+    session.edit("render.soften_px", 1.0)
+    assert session.compare is held and held.run is first
+    session.hold_b = False
+    finish(session)
+    session.save()
+    before = session.current
+    session.edit("render.soften_px", 1.5)  # the same key as before the Save, but the Save started afresh
+    assert session.compare is before

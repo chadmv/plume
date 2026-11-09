@@ -70,6 +70,10 @@ class EditingPanel:
         imgui.same_line()
         _, self.split = imgui.checkbox("Split", self.split)
         imgui.end_disabled()
+        imgui.same_line()
+        _, session.hold_b = imgui.checkbox("Hold B", session.hold_b)
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Keep B where it is while you go on changing A")
         if compare is None:
             imgui.text_disabled("Compare: B is the run before the next change")
             return

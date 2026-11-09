@@ -8,7 +8,9 @@ parents with the unsaved edits on top, and the stages of the keys that changed (
 - look: a new viewport over the same run (a redraw);
 - nothing on screen (a comment, `[preview]` with Preview off): the new recipe is taken, nothing else.
 A change that does work makes the current A into B (Compare, V12), except while A is still simulating: then
-A is replaced and B kept. A recipe error leaves the last good run playing and holds the message `plume
+A is replaced and B kept. B also stays while Hold B is on, and when a change touches only the keys the change
+before it touched, so several nudges of one value compare against the value before the first nudge (a Save
+starts afresh). A recipe error leaves the last good run playing and holds the message `plume
 check` would print, for a red banner, until the file is fixed; a rejected edit is not applied and its
 message goes back to the panel.
 """
@@ -62,6 +64,8 @@ class Session:
         self.watch = RecipeWatch(chain_paths(recipe_path, chain))
         self.runs_started = 0
         self.compare: Snapshot | None = None  # B
+        self.hold_b = False  # the panel's Hold B: changes leave B where it is
+        self._last_change: frozenset[str] | None = None  # the keys the last change touched, to keep B over nudges
         self._error_from_edits = False  # the banner's error is the unsaved edits' (an edit that fits clears it)
         self._take_file(merged)
         self.edits: dict[str, Any] = _edits_from_sets(sets, merged)  # --set values start as edits (V14)
@@ -187,6 +191,7 @@ class Session:
             return self.notice
         self.edits = {}
         self.kept_edits_note = None
+        self._last_change = None  # the next change moves B, so B is the saved state
         self.reload()
         self.notice = "; ".join([f"saved {count} key{'s' if count != 1 else ''} to {self.recipe_path.name}",
                                  *notes])
@@ -256,8 +261,10 @@ class Session:
         else:
             self.current = dataclasses.replace(current, recipe=recipe)
             return TAKE
-        if not current.run.capturing:
-            self.compare = current  # A becomes B; while A is still simulating or re-capturing, B stays
+        changed = frozenset(changed_paths(current.recipe, recipe))
+        if self._moves_b(changed):
+            self.compare = current  # A becomes B
+        self._last_change = changed
         if work == RERUN:
             self.current = self._new_run(recipe)
         elif work == RECAPTURE:
@@ -265,9 +272,19 @@ class Session:
             self.current = Snapshot(recipe, run, Viewport(recipe, run.derived, self.device))
         else:
             self.current = Snapshot(recipe, current.run, Viewport(recipe, current.run.derived, self.device))
-        if current.run not in (self.current.run, getattr(self.compare, "run", None)):
-            current.run.cancel()  # a run nobody shows any more
+        if current.run not in (self.current.run, self.current.run.source, getattr(self.compare, "run", None)):
+            current.run.cancel()  # a run nobody shows or re-captures from any more
         return work
+
+    def _moves_b(self, changed: frozenset[str]) -> bool:
+        """Whether a change makes A into B. B stays while A is still simulating or re-capturing (B is a run
+        that got somewhere), while Hold B is on, and over repeated changes of the same keys (several nudges
+        of one value compare against the value before the first nudge). With no B yet, the change makes one."""
+        if self.compare is None:
+            return not self.current.run.capturing
+        if self.current.run.capturing or self.hold_b:
+            return False
+        return self._last_change is None or not changed <= self._last_change
 
     def _new_run(self, recipe: Recipe) -> Snapshot:
         derived = derive(recipe)

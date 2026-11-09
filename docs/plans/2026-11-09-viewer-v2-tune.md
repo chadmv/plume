@@ -41,6 +41,9 @@ clips and stills.
   while A is still simulating: a change during a live run replaces A and keeps B, so B is always a run that
   got somewhere. A change that alters nothing on screen (a comment, a `[preview]` key with Preview off, a
   Save the file already holds) keeps B.
+  Added after the PC try (Chad's pick): a change that touches only the keys the change before it touched
+  keeps B too, so several drags of one slider compare against the value before the first; a Save starts
+  afresh. **Hold B** in the panel keeps B through every change until it is turned off.
 - **Cache budget with B.** B's frames stay on the device. A re-run's cache gets `--cache-gb` less what B's
   own cache holds (nothing when they share one), and the thinning note says when B took the room.
 - **Each viewport owns its widening scratch.** In V1 the frame cache widened into one pair of scratch

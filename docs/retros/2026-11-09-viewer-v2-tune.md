@@ -16,7 +16,7 @@ re-running, a `[look]` key only redraws. **Save** (Ctrl+S) writes just the chang
 recipe with tomlkit, keeping its comments, layout and line endings, never touching an `extends` parent;
 a test proves the saved recipe resolves to exactly what the viewer was showing, so `plume run` of it gives
 the same look. **Compare** (`C`) flips to the run before the last change at the same frame and camera,
-**Split** shows both side by side, and the panel lists the keys that differ. The light arrow's tip can be
+**Split** shows both side by side, and the panel lists the keys that differ; repeated nudges of one key keep B at the value before the first nudge, and **Hold B** freezes B until it is turned off. The light arrow's tip can be
 dragged to move the key light. `plume run`'s outputs are unchanged. Cloud: 274 tests pass (2 gpu tests skip) and
 the window was smoke-run under `xvfb-run`. PC (2080 Ti): 275 pass with the gpu tests; the one failure was a new
 test assuming POSIX file modes, now fixed. Trying the controls by hand on the PC is still to do.

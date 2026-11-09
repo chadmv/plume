@@ -83,7 +83,9 @@ only the changed keys into the opened recipe and keeps its comments and layout; 
 parent is written into the opened recipe, never the parent. `--set` values start as unsaved edits, so Save
 writes them in. Edits not yet saved stay applied when the file changes on disk, and a banner says how many.
 
-**Compare.** Each change keeps the run before it as B. `C` (or Compare) flips the view to B at the same frame
+**Compare.** Each change keeps the run before it as B. Nudging the same value again (several drags of one
+slider) leaves B where it was, so B stays the look before the first nudge; changing another key moves B on.
+**Hold B** keeps B where it is through every change until you turn it off. `C` (or Compare) flips the view to B at the same frame
 and camera; Split shows A and B side by side; the panel lists the keys that differ.
 
 | Input | Does |
