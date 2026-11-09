@@ -13,7 +13,6 @@ the run's heat divisor and the shade by its shade divisor, as the sheet's are.
 """
 
 import itertools
-import math
 
 import numpy as np
 import warp as wp
@@ -28,7 +27,7 @@ from plume.report.color import hex_to_linear, ramp, to_srgb_bytes
 from plume.sheet.shade import NO_SMOKE
 from plume.sim.grid import GridInfo
 from plume.sim.sample import sample_index_space
-from plume.view.live_run import LiveRun
+from plume.view.live_run import LiveRun, visible_density
 from plume.view.navigation import ViewCamera
 
 LOOK, HEAT_VIEW, THICKNESS_VIEW, SHADE_VIEW = 0, 1, 2, 3  # keys 1 to 4; SHADE_VIEW shows the normal layout's normal
@@ -217,8 +216,10 @@ class Viewport:
         self._images: dict[tuple[int, int], tuple[wp.array, wp.array]] = {}
         self._depth = wp.zeros(1, dtype=float, device=device)
 
-    def draw(self, run: LiveRun, frame: int, camera: ViewCamera, view: int, background_hex: str) -> np.ndarray:
-        """A kept frame of the run from `camera`: (height, width, 4) uint8 RGBA."""
+    def draw(self, run: LiveRun, frame: int, camera: ViewCamera, view: int, background_hex: str,
+             overlay=None) -> np.ndarray:
+        """A kept frame of the run from `camera`: (height, width, 4) uint8 RGBA. `overlay(image, camera)`, when
+        given, draws over the display bytes on the device before they are copied (the slice plane)."""
         smoke, temperature = self._load(run, frame)
         raw, out = self._image(camera.height_px, camera.width_px)
         self.renderer.march(smoke, temperature, run.info, view_params(camera), raw)
@@ -226,6 +227,8 @@ class Viewport:
                           self.toward_light_world @ camera.toward])
         inputs = look_inputs(self.recipe, view, run.heat_divisor, run.shade_divisor, background_hex, light)
         launch_look(raw, self.tables, inputs, out, self.device)
+        if overlay is not None:
+            overlay(out, camera)
         return out.numpy().copy()  # on the CPU device numpy() shares the array the next draw overwrites
 
     def center_hit(self, run: LiveRun, frame: int, camera: ViewCamera) -> np.ndarray | None:
@@ -251,8 +254,7 @@ class Viewport:
 
     def visible_density(self) -> float:
         """Smoke density at which one cell's opacity reaches one byte step (1/255)."""
-        cell_m = self.recipe.domain.cell_m
-        return -math.log(1.0 - 1.0 / 255.0) / (self.recipe.render.opacity_per_density * cell_m)
+        return visible_density(self.recipe)
 
     def _load(self, run: LiveRun, frame: int) -> tuple[wp.array, wp.array]:
         """The frame's widened fields and volume pass, redone only when the frame changes. The widening

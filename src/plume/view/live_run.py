@@ -9,13 +9,19 @@ A re-capture (a render or sheet edit, V11) is a run that shares a finished run's
 simulating, renders each kept frame's sheet-camera raw frame again with the new settings, one frame per
 window update, then assembles. It reads the 16-bit kept fields, so its divisors can differ from `plume
 run`'s in the last digits; until its assembly lands it reports the source run's divisors.
+
+As each frame lands the run also notes which faces its smoke reached, for the numbers strip's marks: an
+open face, or the ceiling whatever its kind, counts when any cell in the layer beside it holds at least the
+density at which one cell shows one byte step (`visible_density`).
 """
 
 import itertools
+import math
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 
 import numpy as np
+import warp as wp
 
 from plume.recipe.derived import Derived
 from plume.recipe.schema import Recipe
@@ -29,6 +35,41 @@ from plume.view.frame_cache import FrameCache
 
 
 _SERIALS = itertools.count(1)
+FACE_NAMES = ("left", "right", "bottom", "top", "back", "front")  # x low, x high, y low, y high, z low, z high
+CEILING = "top"
+
+
+@wp.kernel
+def boundary_layer_kernel(smoke: wp.array3d(dtype=float), layers: wp.array3d(dtype=float)):
+    """Copies the six boundary layers of the smoke into `layers[face, a, b]` (face in FACE_NAMES order; a and
+    b the face's two other axes in x, y, z order); entries past a face's size are 0."""
+    face, a, b = wp.tid()
+    axis = face // 2
+    first = wp.min((axis + 1) % 3, (axis + 2) % 3)
+    second = wp.max((axis + 1) % 3, (axis + 2) % 3)
+    if a >= smoke.shape[first] or b >= smoke.shape[second]:
+        layers[face, a, b] = 0.0
+        return
+    cell = wp.vec3i(0, 0, 0)
+    cell[axis] = (face % 2) * (smoke.shape[axis] - 1)
+    cell[first] = a
+    cell[second] = b
+    layers[face, a, b] = smoke[cell[0], cell[1], cell[2]]
+
+
+def visible_density(recipe: Recipe) -> float:
+    """Smoke density at which one cell's opacity reaches one byte step (1/255)."""
+    return -math.log(1.0 - 1.0 / 255.0) / (recipe.render.opacity_per_density * recipe.domain.cell_m)
+
+
+def faces_reached(layers: np.ndarray, recipe: Recipe) -> tuple[str, ...]:
+    """The open faces, and the ceiling, whose boundary layer (from `boundary_layer_kernel`) holds visible
+    smoke, in FACE_NAMES order."""
+    largest = layers.reshape(len(FACE_NAMES), -1).max(axis=1)
+    threshold = visible_density(recipe)
+    faces = recipe.domain.faces
+    return tuple(name for name, value in zip(FACE_NAMES, largest, strict=True)
+                 if value >= threshold and (name == CEILING or getattr(faces, name) == "open"))
 
 
 class LiveRun:
@@ -52,6 +93,7 @@ class LiveRun:
         self.started_s = time.perf_counter()
         self.stopped = False  # cancelled part way (a recipe error, or a newer run replaced it)
         self._largest_raw_heat = 0.0
+        self._layers: wp.array | None = None
         self._assembly: Future | None = None
         self._executor: ThreadPoolExecutor | None = None
         if source is None:
@@ -60,6 +102,7 @@ class LiveRun:
             self.info: GridInfo | None = None  # the grid's geometry, from the first frame
             self.steps: StepLog | None = None
             self.elapsed_s = 0.0
+            self.edges: dict[int, tuple[str, ...]] = {}  # the faces each landed frame's smoke reached
             self._frames = simulate_frames(recipe, derived, device)
         else:
             self.simulation_serial = source.simulation_serial
@@ -67,6 +110,7 @@ class LiveRun:
             self.info = source.info
             self.steps = source.steps
             self.elapsed_s = source.elapsed_s  # the simulation's time; a re-capture adds no simulation
+            self.edges = source.edges
             self._frames = self._recaptured_frames()
 
     @classmethod
@@ -113,10 +157,19 @@ class LiveRun:
         if self.info is None:
             self.info = grid.info
         self._keep_raw(self.renderer.render(grid))
-        self.cache.store(frame, grid.smoke.data, grid.temperature.data)
+        self.cache.store(frame, grid.smoke.data, grid.temperature.data,
+                         tuple(field.data for field in grid.velocity_fields()))
+        self.edges[frame] = self._faces_reached(grid.smoke.data)
         if frame == self.frames - 1:
             self._finish()
         return frame
+
+    def _faces_reached(self, smoke: wp.array) -> tuple[str, ...]:
+        if self._layers is None:
+            side = max(self.derived.cells)
+            self._layers = wp.zeros((len(FACE_NAMES), side, side), dtype=float, device=self.device)
+        wp.launch(boundary_layer_kernel, dim=self._layers.shape, device=self.device, inputs=[smoke, self._layers])
+        return faces_reached(self._layers.numpy(), self.recipe)
 
     def _keep_raw(self, raw: np.ndarray) -> None:
         self.raw_frames.append(raw)

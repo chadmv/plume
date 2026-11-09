@@ -73,3 +73,41 @@ def test_before_assembly_heat_uses_the_largest_raw_heat_so_far(cpu_device):
     assert live.shade_divisor == 1.0
     live.cancel()
     assert not live.done and live.stopped and live.advance() is None
+
+
+def test_every_frame_notes_the_open_faces_and_ceiling_its_smoke_reached(cpu_device):
+    from plume.view.live_run import FACE_NAMES, faces_reached
+
+    recipe = tiny_recipe(domain={"faces": {"left": "closed"}})
+    layers = np.zeros((len(FACE_NAMES), 4, 4), dtype=np.float32)
+    assert faces_reached(layers, recipe) == ()
+    layers[0, 1, 1] = 1.0  # left: closed, so no mark
+    layers[2, 0, 0] = 1.0  # bottom: closed
+    layers[3, 2, 3] = 1.0  # top: the ceiling
+    layers[5, 0, 1] = 1.0  # front: open
+    assert faces_reached(layers, recipe) == ("top", "front")
+
+
+def test_the_boundary_layers_are_the_smokes_outer_cells(cpu_device):
+    import warp as wp
+
+    from plume.view.live_run import FACE_NAMES, boundary_layer_kernel
+
+    smoke = np.arange(3 * 4 * 5, dtype=np.float32).reshape(3, 4, 5)
+    layers = wp.zeros((len(FACE_NAMES), 5, 5), dtype=float, device=cpu_device)
+    wp.launch(boundary_layer_kernel, dim=layers.shape, device=cpu_device,
+              inputs=[wp.array(smoke, dtype=float, device=cpu_device), layers])
+    got = layers.numpy()
+    assert np.array_equal(got[0, :4, :5], smoke[0])
+    assert np.array_equal(got[1, :4, :5], smoke[-1])
+    assert np.array_equal(got[2, :3, :5], smoke[:, 0])
+    assert np.array_equal(got[3, :3, :5], smoke[:, -1])
+    assert np.array_equal(got[4, :3, :4], smoke[:, :, 0])
+    assert np.array_equal(got[5, :3, :4], smoke[:, :, -1])
+    assert got[0, 4].sum() == 0.0 and got[2, 3].sum() == 0.0
+
+
+def test_a_run_keeps_velocity_and_notes_edges_per_frame(runs):
+    _, _, live, _ = runs
+    assert live.cache.has_velocity and all(live.cache.velocity_kept(frame) for frame in range(4))
+    assert sorted(live.edges) == [0, 1, 2, 3]
