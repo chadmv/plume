@@ -4,6 +4,9 @@ outline and the key light's direction, as world-space segments projected to the 
 The box: an edge is solid when either face it borders is closed and dashed when both are open, so a closed
 floor under open walls reads as a solid floor outline with dashed walls. An emitter's outline is dashed
 for a frame whose block of steps it was off for the whole of.
+
+The light arrow can be dragged by its tip (V2): the tip follows the mouse in the view's plane, and on
+release the new direction is written back into `render.light_dir`, which is in the sheet camera's space.
 """
 
 import math
@@ -13,6 +16,7 @@ import numpy as np
 
 from plume.recipe.derived import Derived
 from plume.recipe.schema import EmitterSettings, FaceSettings, Recipe
+from plume.render.camera import Camera
 from plume.view.navigation import ViewCamera
 
 TICK_SPACING_M = 0.5
@@ -24,6 +28,7 @@ NEAR_M = 0.01  # perspective segments are clipped this far in front of the eye
 SCREEN_MARGIN_PX = 16.0  # segments are clipped to the viewport plus this margin before dashing
 DASH_PX = 7.0
 GAP_PX = 5.0
+LIGHT_GRAB_PX = 12.0  # a left press this close to the light arrow's tip drags the light
 
 BOX, TICK, EMITTER, LIGHT = "box", "tick", "emitter", "light"
 
@@ -45,7 +50,36 @@ def guide_segments(recipe: Recipe, derived: Derived, frame: int, toward_light_wo
     segments = box_edges(low, size, recipe.domain.faces) + floor_ticks(low, size)
     for emitter in recipe.emitter:
         segments += emitter_outline(emitter, start_s, end_s)
-    return segments + light_arrow(low + size / 2, toward_light_world, ARROW_LENGTH_SHARE * float(size.max()))
+    return segments + light_arrow(*light_arrow_span(derived), toward_light_world)
+
+
+def light_arrow_span(derived: Derived) -> tuple[np.ndarray, float]:
+    """Where the light arrow starts (the domain's center) and its length in meters."""
+    low = np.array(derived.domain_min_m, dtype=np.float64)
+    size = np.array(derived.size_m, dtype=np.float64)
+    return low + size / 2, ARROW_LENGTH_SHARE * float(size.max())
+
+
+def turn_light(toward_light: np.ndarray, dx_px: float, dy_px: float, camera: ViewCamera,
+               derived: Derived) -> np.ndarray:
+    """The unit direction toward the light after dragging the arrow's tip by (dx, dy) pixels (y down): the
+    tip moves with the mouse in the view's plane, at the tip's depth in perspective."""
+    origin, length = light_arrow_span(derived)
+    direction = np.asarray(toward_light, dtype=np.float64)
+    direction = direction / np.linalg.norm(direction)
+    tip = origin + direction * length
+    meters_per_px = camera.pixel * (camera.ahead(tip) if camera.perspective else 1.0)
+    moved = tip + (camera.right * dx_px - camera.up * dy_px) * meters_per_px - origin
+    norm = np.linalg.norm(moved)
+    return direction if norm < 1e-9 else moved / norm
+
+
+def light_dir_in_camera(toward_light_world: np.ndarray, camera: Camera, length: float = 1.0) -> np.ndarray:
+    """A world direction toward the light in the sheet camera's space (x right, y up, z toward the camera),
+    scaled to `length`: the inverse of `render.frame_renderer.toward_light_world`."""
+    direction = np.asarray(toward_light_world, dtype=np.float64)
+    direction = direction / np.linalg.norm(direction)
+    return length * camera.to_camera_space(direction)
 
 
 def box_edges(low: np.ndarray, size: np.ndarray, faces: FaceSettings) -> list[Segment]:
@@ -105,7 +139,7 @@ def emitter_outline(emitter: EmitterSettings, block_start_s: float, block_end_s:
     return segments
 
 
-def light_arrow(origin: np.ndarray, toward_light: np.ndarray, length: float) -> list[Segment]:
+def light_arrow(origin: np.ndarray, length: float, toward_light: np.ndarray) -> list[Segment]:
     """An arrow from `origin` toward the key light, with a two-line head."""
     direction = np.asarray(toward_light, dtype=np.float64)
     direction = direction / np.linalg.norm(direction)
