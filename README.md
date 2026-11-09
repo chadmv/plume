@@ -72,6 +72,20 @@ The view is drawn by the sheet's own ray march with the contact sheets' look, so
 will. Save the recipe (or a parent it `extends`) and the viewer re-runs it; a recipe error shows in a red
 banner and the last good run keeps playing. The sheet itself still comes only from `plume run`.
 
+**Tuning.** The right panel lists every recipe key by table: dimmed keys are defaults, plain keys are set by
+the recipe, highlighted keys are changed in the viewer (each with a Reset). Drag a number (Ctrl + click to
+type), pick a choice or type text; the change applies when you let go, after the same checks as `plume
+check` (a rejected value shows the message beside the field). What it does depends on the key's table, its
+stage in `docs/recipe-reference.md`: a simulation key re-runs from time 0, a `[render]`, `[camera]` or
+`[output]` key redraws from the kept frames, a `[look]` key only redraws. Ramps, colors and emitter names are
+edited in the file. Drag the light arrow's tip (guides on) to move the key light. **Save** (Ctrl+S) writes
+only the changed keys into the opened recipe and keeps its comments and layout; a key from an `extends`
+parent is written into the opened recipe, never the parent. `--set` values start as unsaved edits, so Save
+writes them in. Edits not yet saved stay applied when the file changes on disk, and a banner says how many.
+
+**Compare.** Each change keeps the run before it as B. `C` (or Compare) flips the view to B at the same frame
+and camera; Split shows A and B side by side; the panel lists the keys that differ.
+
 | Input | Does |
 |---|---|
 | Alt + left drag | Tumble around the pivot |
@@ -86,6 +100,9 @@ banner and the last good run keeps playing. The sheet itself still comes only fr
 | 1 2 3 4 | Look, Heat, Thickness, Shade (Normal in the normal layout) |
 | G, B | Guides (domain box, 0.5 m floor ticks, emitters, light); cycle the background |
 | Space, `,` `.`, Shift+`,` Shift+`.` | Play or pause; step a frame; first or last frame |
+| Left drag on the light arrow's tip | Turn the key light (`render.light_dir`) |
+| C | Compare: show B, the run before the last change |
+| Ctrl+S | Save the panel's edits into the recipe |
 
 `--cache-gb` (default 4) bounds the device memory the kept frames take; a run that does not fit keeps
 every second (or fourth) frame and says so. The corner shows the redraw time and the run's time.
