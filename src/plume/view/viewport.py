@@ -12,6 +12,7 @@ are tabulated from `report/color.py` itself, and a test holds the two composites
 the run's heat divisor and the shade by its shade divisor, as the sheet's are.
 """
 
+import itertools
 import math
 
 import numpy as np
@@ -193,19 +194,26 @@ def look_bytes(raw: np.ndarray, tables: LookTables, inputs: LookInputs, device: 
     return out.numpy().copy()
 
 
+_VIEWPORT_SERIALS = itertools.count(1)
+
+
 class Viewport:
-    """Draws a live run's kept frames for any camera. Holds the march's scratch images by size."""
+    """Draws a live run's kept frames for any camera, with one recipe's render and look settings. Holds the
+    march's scratch images by size."""
 
     def __init__(self, recipe: Recipe, derived: Derived, device: str):
+        self.serial = next(_VIEWPORT_SERIALS)  # a redraw-only edit gives a new viewport over the same run
         self.recipe = recipe
         self.device = device
         sheet_view = sheet_domain_view(recipe, derived)
         self.renderer = FrameRenderer(sheet_view, recipe.render, derived.cells, recipe.output.channels, device)
+        self.sheet_camera = sheet_view.camera
         light = toward_light_world(sheet_view.camera, recipe.render.light_dir)
         self.toward_light_world = light / np.linalg.norm(light)
         self.tables = LookTables(recipe, device)
         self._prepared: tuple[int, int] | None = None  # (run serial, frame) of the loaded fields and volume pass
         self._fields: tuple[wp.array, wp.array] | None = None
+        self._scratch: dict[int, tuple[wp.array, wp.array]] = {}  # this viewport's widening pair, by cache
         self._images: dict[tuple[int, int], tuple[wp.array, wp.array]] = {}
         self._depth = wp.zeros(1, dtype=float, device=device)
 
@@ -247,11 +255,14 @@ class Viewport:
         return -math.log(1.0 - 1.0 / 255.0) / (self.recipe.render.opacity_per_density * cell_m)
 
     def _load(self, run: LiveRun, frame: int) -> tuple[wp.array, wp.array]:
-        """The frame's widened fields and volume pass, redone only when the frame changes. The cache's
-        scratch arrays are this viewport's alone (one viewport per run), so they still hold the frame."""
+        """The frame's widened fields and volume pass, redone only when the frame changes. The widening
+        pair is this viewport's alone, so it still holds the frame."""
         key = (run.serial, frame)
         if self._prepared != key:
-            self._fields = run.cache.load(frame)
+            cache_key = id(run.cache)
+            if cache_key not in self._scratch:
+                self._scratch = {cache_key: run.cache.scratch()}  # one cache at a time; the run holds it alive
+            self._fields = run.cache.load(frame, self._scratch[cache_key])
             self.renderer.prepare(self._fields[0], run.info.cell_m)
             self._prepared = key
         return self._fields

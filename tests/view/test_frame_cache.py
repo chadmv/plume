@@ -17,7 +17,7 @@ def test_a_stored_frame_is_the_field_rounded_to_16_bits(cpu_device):
     cache = FrameCache(CELLS, frames=4, budget_bytes=1e9, device=cpu_device)
     cache.store(0, field(smoke, cpu_device), field(temperature, cpu_device))
     assert np.array_equal(cache.stored_smoke(0).numpy(), smoke.astype(np.float16))
-    wide_smoke, wide_temperature = cache.load(0)
+    wide_smoke, wide_temperature = cache.load(0, cache.scratch())
     assert np.array_equal(wide_smoke.numpy(), smoke.astype(np.float16).astype(np.float32))
     assert np.array_equal(wide_temperature.numpy(), temperature.astype(np.float16).astype(np.float32))
 
