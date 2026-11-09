@@ -224,3 +224,13 @@ def test_the_preview_toggle_does_not_claim_edits_were_kept_over_a_reload(cpu_dev
 def test_a_table_valued_set_becomes_one_edit_per_key(cpu_device, tmp_path):
     session = open_session(tmp_path, sets=("forces.turbulence={ scale_m = 0.4, strength_mps2 = 0.1 }",))
     assert session.edits == {"forces.turbulence.scale_m": 0.4, "forces.turbulence.strength_mps2": 0.1}
+
+
+def test_a_file_error_is_not_blamed_on_the_edits_and_an_edit_does_not_hide_it(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    session.edit("look.shade_depth", 0.5)
+    bump(tmp_path / "child.toml", CHILD.replace("smoke_per_s = 0.5", "smoke_per_sec = 0.5"))
+    session.update(now_s=1e12)
+    assert session.error is not None and "unsaved viewer edits" not in session.error
+    session.edit("look.shade_depth", 0.4)
+    assert session.error is not None

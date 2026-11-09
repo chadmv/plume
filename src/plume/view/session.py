@@ -62,7 +62,7 @@ class Session:
         self.watch = RecipeWatch(chain_paths(recipe_path, chain))
         self.runs_started = 0
         self.compare: Snapshot | None = None  # B
-        self._file_broken = False  # the last reload could not read the file or its parents
+        self._error_from_edits = False  # the banner's error is the unsaved edits' (an edit that fits clears it)
         self._take_file(merged)
         self.edits: dict[str, Any] = _edits_from_sets(sets, merged)  # --set values start as edits (V14)
         recipe, self.base_recipe = self._resolve(self.edits)
@@ -116,6 +116,7 @@ class Session:
         except RecipeError as error:
             run.cancel()
             self.error = f"recipe error: {error}"
+            self._error_from_edits = False
 
     def reload(self, from_disk: bool = False) -> bool:
         """Reads the recipe again, with the unsaved edits on top; True when a new run started. `from_disk`
@@ -126,10 +127,9 @@ class Session:
             merged, chain = resolve_extends(read_toml(self.recipe_path), self.recipe_path)
         except RecipeError as error:
             self.error = f"recipe error: {error}"
-            self._file_broken = True
+            self._error_from_edits = False
             self.watch.follow(reachable_chain(self.recipe_path))
             return False
-        self._file_broken = False
         self.watch.follow(chain_paths(self.recipe_path, chain))
         self._take_file(merged)
         if from_disk:
@@ -138,10 +138,13 @@ class Session:
         try:
             recipe, base = self._resolve(self.edits)
         except RecipeError as error:
-            edits = f" (with {len(self.edits)} unsaved viewer edits; Revert drops them)" if self.edits else ""
+            self._error_from_edits = bool(self.edits) and bool(self._file_values)  # the file alone is fine
+            edits = (f" (with {len(self.edits)} unsaved viewer edits; Revert drops them)"
+                     if self._error_from_edits else "")
             self.error = f"recipe error: {error}{edits}"
             return False
         self.error = None
+        self._error_from_edits = False
         return self._apply(recipe, base) == RERUN
 
     def set_preview(self, preview: bool) -> None:
@@ -183,6 +186,7 @@ class Session:
             self.notice = f"not saved: {error}"
             return self.notice
         self.edits = {}
+        self.kept_edits_note = None
         self.reload()
         self.notice = "; ".join([f"saved {count} key{'s' if count != 1 else ''} to {self.recipe_path.name}",
                                  *notes])
@@ -230,8 +234,9 @@ class Session:
         except RecipeError as error:
             return str(error)
         self.edits = edits
-        if not self._file_broken:
-            self.error = None  # the edits fit the file now (the reload's error was the edits')
+        if self._error_from_edits:
+            self.error = None  # the edits fit the file now
+            self._error_from_edits = False
         if self.kept_edits_note and not edits:
             self.kept_edits_note = None
         self._apply(recipe, base)
