@@ -13,14 +13,14 @@ from plume.recipe.load import load_recipe_with_origin
 from plume.recipe.schema import Recipe
 from plume.recipe.serialize import recipe_to_toml
 from plume.recipe.variation import RecipeOrigin
-from plume.render.camera import DomainView, make_camera, make_domain_view
+from plume.render.camera import DomainView, sheet_domain_view
 from plume.render.frame_renderer import FrameRenderer
 from plume.report.channels import channel_strip
 from plume.report.composite import sheet_look
 from plume.report.contact import contact_sheet
 from plume.report.numbers import RunFacts, measure, numbers_text
 from plume.report.timing import StageTimer
-from plume.sheet.assemble import AssembledFrames, assemble
+from plume.sheet.assemble import AssembledFrames, assemble, seat_point
 from plume.sheet.pack import pack, write_png
 from plume.sheet.sheet_json import SheetInfo, sheet_json_text, source_path
 from plume.sim.device import init_device
@@ -48,11 +48,10 @@ def run_recipe(recipe_path: Path, preview: bool, device: str, out: str | None, c
         recipe, origin = load_recipe_with_origin(recipe_path, preview=preview, sets=sets)
         derived = derive(recipe)
         device_name = init_device(device)
-    view = make_domain_view(make_camera(recipe.camera.elevation_deg, recipe.camera.azimuth_deg),
-                            derived.domain_min_m, derived.size_m, recipe.domain.cell_m, recipe.render.px_per_cell)
+    view = sheet_domain_view(recipe, derived)
     raw_frames, steps = _simulate_and_capture(recipe, derived, device_name, view, timer)
     with timer.stage("assemble"):
-        assembled = assemble(raw_frames, view, _seat_point(recipe), recipe.output.frame_px, recipe.render,
+        assembled = assemble(raw_frames, view, seat_point(recipe), recipe.output.frame_px, recipe.render,
                              recipe.output.channels)
     with timer.stage("report"):
         out_dir = _out_dir(recipe, out, preview)
@@ -87,11 +86,6 @@ def _step_facts(steps: StepLog) -> dict:
     """The steps the CFL cap chose, for the settings log (D10)."""
     return {"warmup_steps_run": steps.warmup_steps, "steps_per_frame": list(steps.steps_per_frame),
             "total_steps": steps.total_steps}
-
-
-def _seat_point(recipe: Recipe) -> np.ndarray:
-    emitter = next(e for e in recipe.emitter if e.name == recipe.camera.seat)
-    return np.array(emitter.center_m, dtype=np.float64)
 
 
 def _out_dir(recipe: Recipe, out: str | None, preview: bool) -> Path:

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from plume.recipe.schema import SHADE_LAYOUT, RenderSettings
+from plume.recipe.schema import SHADE_LAYOUT, Recipe, RenderSettings
 from plume.render.camera import DomainView
 from plume.render.raw_frame import HEAT
 from plume.sheet.crop import CropSquare, content_box, square_crop
@@ -58,6 +58,12 @@ def assemble(raw_frames: list[np.ndarray], view: DomainView, seat_world_m: np.nd
                                    shade_divisor=divisor)
         margin += MARGIN_GROWTH
     raise GutterError(f"content still touches the frame edge with crop_margin {margin:.2f}")
+
+
+def seat_point(recipe: Recipe) -> np.ndarray:
+    """The world point the sheet's `seat` marks: the center of the emitter `camera.seat` names."""
+    emitter = next(e for e in recipe.emitter if e.name == recipe.camera.seat)
+    return np.array(emitter.center_m, dtype=np.float64)
 
 
 def _gutter_is_empty(frame: np.ndarray) -> bool:

@@ -57,6 +57,39 @@ color = background * (1 - G) + G * smoke_ramp(heat) * light + emission_ramp(heat
 with `light = 1 - shade_depth * (1 - shade)` in the shade layout and
 `light = ambient + (1 - ambient) * max(0, normal . light_dir)` in the normal layout.
 
+## The live viewer
+
+`plume view` opens a window that runs a recipe on the GPU and shows the smoke in 3D while it simulates,
+then loops the run so it can be judged in motion from any angle. It is an optional extra:
+
+```bash
+uv sync --extra view
+uv run plume view recipes/smoke_puff.toml            # the full grid; --preview runs the preview grid
+uv run plume view recipes/smoke_puff.toml --set forces.drag_per_s=0.4
+```
+
+The view is drawn by the sheet's own ray march with the contact sheets' look, so it shows what the sheet
+will. Save the recipe (or a parent it `extends`) and the viewer re-runs it; a recipe error shows in a red
+banner and the last good run keeps playing. The sheet itself still comes only from `plume run`.
+
+| Input | Does |
+|---|---|
+| Alt + left drag | Tumble around the pivot |
+| Alt + middle drag | Track (pan) |
+| Alt + right drag, wheel | Dolly; in orthographic, change the view's size |
+| Right mouse held | Free-look (cursor captured); releasing puts the pivot on the smoke under the center |
+| Right mouse + W A S D, E Q | Fly forward, left, back, right, up, down (the first key switches to perspective) |
+| Right mouse + wheel | Fly speed, x1.25 a notch |
+| F, Shift+F | Frame the smoke of this frame; frame the whole domain |
+| Home | The sheet camera (orthographic) |
+| P | Orthographic or perspective |
+| 1 2 3 4 | Look, Heat, Thickness, Shade (Normal in the normal layout) |
+| G, B | Guides (domain box, 0.5 m floor ticks, emitters, light); cycle the background |
+| Space, `,` `.`, Shift+`,` Shift+`.` | Play or pause; step a frame; first or last frame |
+
+`--cache-gb` (default 4) bounds the device memory the kept frames take; a run that does not fit keeps
+every second (or fourth) frame and says so. The corner shows the redraw time and the run's time.
+
 ### Godot import settings
 
 Import sheets as **Lossless** with **mipmaps on** and **Detect 3D off**. Godot's default 3D detection

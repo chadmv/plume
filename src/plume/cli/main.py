@@ -38,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
 
             run_check(Path(args.recipe), preview=args.preview, sets=tuple(args.set))
             return EXIT_OK
+        if args.command == "view":
+            return _view(args)
         from plume.cli.run import run_recipe
 
         run_recipe(Path(args.recipe), preview=args.preview, device=args.device, out=args.out, sets=tuple(args.set),
@@ -49,6 +51,21 @@ def main(argv: list[str] | None = None) -> int:
     except (DeviceError, NothingVisibleError, GutterError) as error:
         print(f"error: {error}", file=sys.stderr)
         return EXIT_FAILED
+
+
+def _view(args: argparse.Namespace) -> int:
+    from plume.cli.view import ViewUnavailable, ViewUsageError, run_view
+
+    try:
+        run_view(Path(args.recipe), preview=args.preview, device=args.device, sets=tuple(args.set),
+                 cache_gb=args.cache_gb)
+    except ViewUsageError as error:
+        print(f"plume view: error: {error}", file=sys.stderr)
+        return EXIT_USAGE
+    except ViewUnavailable as error:
+        print(f"error: {error}", file=sys.stderr)
+        return EXIT_FAILED
+    return EXIT_OK
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -64,11 +81,34 @@ def _parser() -> argparse.ArgumentParser:
     run = commands.add_parser("run", help="simulate a recipe and write the sheet and reports")
     run.add_argument("recipe", help="path to the recipe TOML")
     run.add_argument("--preview", action="store_true", help="low resolution, few frames, for a quick look")
-    run.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto",
-                     help="where to simulate; auto uses the GPU when there is one")
+    _add_device_argument(run)
     run.add_argument("--out", help="output folder; default out/<name>/")
     _add_set_argument(run)
+
+    view = commands.add_parser("view", help="open the live viewer window on a recipe (needs the view extra)")
+    view.add_argument("recipe", help="path to the recipe TOML")
+    view.add_argument("--preview", action="store_true", help="run the preview grid instead of the full grid")
+    _add_device_argument(view)
+    view.add_argument("--cache-gb", type=_positive_float, default=4.0,
+                      help="device memory for the kept frames; a run that does not fit keeps every second "
+                           "(then fourth) frame")
+    _add_set_argument(view)
     return parser
+
+
+def _positive_float(text: str) -> float:
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number: {text!r}") from None
+    if not value > 0.0 or value == float("inf"):
+        raise argparse.ArgumentTypeError(f"must be above 0, got {text}")
+    return value
+
+
+def _add_device_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto",
+                        help="where to simulate; auto uses the GPU when there is one")
 
 
 def _add_set_argument(parser: argparse.ArgumentParser) -> None:

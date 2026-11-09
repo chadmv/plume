@@ -32,8 +32,10 @@ def read_toml(path: Path) -> dict:
             return tomllib.load(file)
     except FileNotFoundError:
         raise RecipeError(f"recipe not found: {path}") from None
-    except tomllib.TOMLDecodeError as error:
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as error:
         raise RecipeError(f"{path} is not valid TOML: {error}") from None
+    except OSError as error:
+        raise RecipeError(f"cannot read {path}: {error.strerror or error}") from None
 
 
 def resolve_extends(table: dict, path: Path) -> tuple[dict, tuple[str, ...]]:

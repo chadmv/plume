@@ -1,4 +1,8 @@
-"""The ray march: one ray per domain-view pixel, front to back through the volume, fixed half-cell steps.
+"""The ray march: one ray per view pixel, front to back through the volume, fixed half-cell steps.
+
+The sheet's view is orthographic: parallel rays from the camera plane, over the domain view. The viewer can
+also ask for a perspective view: rays from an eye through a plane one meter in front of it, starting at the
+eye when it is inside the domain. The march along each ray is the same for both.
 
 Each ray gathers three things:
 - thickness: how much the smoke blocks the ray (Beer-Lambert), the sheet's G;
@@ -25,12 +29,17 @@ SHADE = wp.constant(raw_frame.SHADE)
 
 @wp.struct
 class ViewParams:
+    """The pixel rectangle on the camera plane (orthographic) or on the plane one meter in front of the
+    eye (perspective), in the camera's basis."""
+
     right: wp.vec3
     up: wp.vec3
     toward: wp.vec3
     left_m: float
     top_m: float
     pixel_m: float
+    perspective: int  # 0: parallel rays along -toward; 1: rays from `eye`
+    eye: wp.vec3
 
 
 @wp.struct
@@ -69,8 +78,13 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
     plane_y = view.top_m - (float(py) + 0.5) * view.pixel_m
     origin = view.right * plane_x + view.up * plane_y + view.toward * FAR_M
     direction = -view.toward
+    if view.perspective == 1:
+        origin = view.eye
+        direction = wp.normalize(view.right * plane_x + view.up * plane_y - view.toward)
     box_max = info.origin_m + wp.vec3(float(info.dims[0]), float(info.dims[1]), float(info.dims[2])) * info.cell_m
     span = slab_range(origin, direction, info.origin_m, box_max)
+    if view.perspective == 1:
+        span = wp.vec2(wp.max(span[0], 0.0), span[1])  # nothing behind the eye
 
     transmittance = float(1.0)
     heat = float(0.0)
