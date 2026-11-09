@@ -19,6 +19,7 @@ uv run pytest                                         # all tests (the gpu-marke
 uv run python -m plume.recipe.reference               # regenerate docs/recipe-reference.md
 uv sync --extra view                                  # the live viewer's window packages
 uv run plume view recipes/smoke_puff.toml             # the live viewer: watch, tune, Save (a window: PC + GPU)
+uv run plume view out/smoke_puff/                     # a finished sheet in the viewer's Sheet tab (no GPU)
 ```
 
 `--device auto|cuda|cpu` picks where kernels run; `auto` uses the GPU when there is one. The first run on a
@@ -38,7 +39,9 @@ device compiles kernels (about 20 s); later runs load them from Warp's cache.
 The user judges a look in the live viewer (`plume view`, a window, so on the PC: cloud sessions have no
 screen). A look-review message gives the command to run on the PC and what to look at; the sheets, contact
 sheets and `numbers.txt` stay the written record. The user can tune in the viewer's panel and Save; a
-saved recipe is a plain recipe, so `plume run` of it is the sheet. A thread that launches the viewer on the
+saved recipe is a plain recipe, so `plume run` of it is the sheet. When the user saves a still or clip
+(`out/<name>/view/`), a thread reads the PNG (a clip's frames with Pillow's `seek`) and the `.toml` beside it,
+which names the camera, frame, view and resolved recipe the user saw. A thread that launches the viewer on the
 PC itself is making a headed GPU run and takes the PC slot. The viewer's code is `src/plume/view/`; its pure parts
 (navigation, guides, frame cache, session) are tested without a window, and a cloud session can smoke-run
 the window itself on CPU under `xvfb-run` (software OpenGL) to catch crashes, not to judge a look.
