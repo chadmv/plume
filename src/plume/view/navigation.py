@@ -102,6 +102,23 @@ class Navigation:
         return (tuple(self.pivot), self.yaw_deg, self.pitch_deg, self.distance, self.half_height,
                 self.perspective, self.width_px, self.height_px)
 
+    def pose_table(self) -> dict:
+        """The pose as a TOML table, for a capture's `.toml` (`set_pose` reads it back)."""
+        return {"pivot_m": [float(value) for value in self.pivot], "yaw_deg": float(self.yaw_deg),
+                "pitch_deg": float(self.pitch_deg), "distance_m": float(self.distance),
+                "half_height_m": float(self.half_height), "perspective": bool(self.perspective),
+                "width_px": int(self.width_px), "height_px": int(self.height_px)}
+
+    def set_pose(self, table: dict) -> None:
+        """Takes a pose written by `pose_table`; the viewport's size stays the window's."""
+        self.pivot = np.array(table["pivot_m"], dtype=np.float64)
+        self.yaw_deg = float(table["yaw_deg"])
+        self.pitch_deg = _clamp(float(table["pitch_deg"]), -PITCH_LIMIT_DEG, PITCH_LIMIT_DEG)
+        self.distance = _clamp(float(table["distance_m"]), self.nearest, self.farthest)
+        self.half_height = _clamp(float(table["half_height_m"]), self.nearest, self.farthest)
+        self.perspective = bool(table["perspective"])
+        self.fly_velocity = np.zeros(3)
+
     def set_viewport(self, width_px: int, height_px: int) -> None:
         self.width_px = max(1, int(width_px))
         self.height_px = max(1, int(height_px))
