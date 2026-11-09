@@ -75,6 +75,8 @@ class LiveRun:
         frames. The source must be able to (`can_recapture`)."""
         if not source.can_recapture():
             raise ValueError("a re-capture needs a finished run that kept every frame")
+        if source.recaptured and source.capturing and source.source is not None:
+            source = source.source  # a re-capture replaced part way: take the divisors of the run it came from
         return cls(recipe, source.derived, source.device, 0.0, source=source)
 
     def can_recapture(self) -> bool:

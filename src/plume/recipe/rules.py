@@ -63,6 +63,9 @@ def _check_emitters(recipe: Recipe) -> None:
         where = f"emitter[{index}]"
         if emitter.name in names:
             raise RecipeError(f"{where}.name {emitter.name!r} is used twice")
+        if not emitter.name or any(mark in emitter.name for mark in ".[]"):
+            # --set and the viewer name an emitter's keys as emitter.<name>.<key>
+            raise RecipeError(f"{where}.name must be a name without '.', '[' or ']'; got {emitter.name!r}")
         names.add(emitter.name)
         if emitter.shape == "sphere":
             _positive(f"{where}.radius_m", emitter.radius_m)

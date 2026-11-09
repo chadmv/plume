@@ -6,6 +6,7 @@ unique. What a key is (its type, unit, description, choices and stage) comes fro
 """
 
 import dataclasses
+import functools
 import typing
 from dataclasses import dataclass
 from typing import Any
@@ -32,8 +33,10 @@ class KeyValue:
     value: Any
 
 
-def flat_values(recipe: Recipe) -> list[KeyValue]:
-    """Every leaf key of the recipe in schema order; `extends` is left out (it is not a value to tune)."""
+@functools.lru_cache(maxsize=16)
+def flat_values(recipe: Recipe) -> tuple[KeyValue, ...]:
+    """Every leaf key of the recipe in schema order; `extends` is left out (it is not a value to tune).
+    Cached by recipe: the window asks for the same few recipes every update."""
     entries: list[KeyValue] = []
     hints = typing.get_type_hints(Recipe)
     for field in dataclasses.fields(Recipe):
@@ -48,7 +51,7 @@ def flat_values(recipe: Recipe) -> list[KeyValue]:
             _walk(hints[name], getattr(recipe, name), name, name, entries)
         else:
             entries.append(KeyValue(_info(field, hints[name], name, ""), getattr(recipe, name)))
-    return entries
+    return tuple(entries)
 
 
 def values_by_path(recipe: Recipe) -> dict[str, Any]:

@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
+import tomlkit.exceptions
 from tomlkit import TOMLDocument
 from tomlkit.items import AoT, InlineTable, Table
 
@@ -36,7 +37,10 @@ def write_edits(path: Path, edits: dict[str, Any], merged: dict) -> list[str]:
             text = file.read()
     except (OSError, UnicodeDecodeError) as error:
         raise RecipeError(f"cannot read {path} to save it: {error}") from None
-    document = tomlkit.parse(text)
+    try:
+        document = tomlkit.parse(text)
+    except tomlkit.exceptions.ParseError as error:
+        raise RecipeError(f"cannot save: {path} is not valid TOML ({error}); fix it in the file first") from None
     notes: list[str] = []
     for key, value in edits.items():
         parts = key.split(".")
@@ -122,10 +126,12 @@ def _table(values: dict) -> Table:
 def _write(path: Path, text: str) -> None:
     """Writes through a temporary file beside the recipe and a replace, so a failed write never leaves half a
     recipe."""
+    path = path.resolve()  # a symlinked recipe keeps its link; the file it names is replaced
     handle, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
         with os.fdopen(handle, "w", encoding="utf-8", newline="") as file:
             file.write(text)
+        os.chmod(temporary, path.stat().st_mode & 0o7777)  # mkstemp makes the file private; keep the recipe's
         os.replace(temporary, path)
     except OSError as error:
         Path(temporary).unlink(missing_ok=True)

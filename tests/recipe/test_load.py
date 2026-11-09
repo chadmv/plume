@@ -178,3 +178,10 @@ def test_settings_toml_loads_back_to_the_same_recipe(tmp_path):
     text = recipe_to_toml(recipe, derive(recipe), device="cpu")
     reloaded = parse_recipe(tomllib.loads(text))
     assert reloaded == recipe
+
+
+@pytest.mark.parametrize("name", ["puff.core", "puff[0]", ""])
+def test_an_emitter_name_that_a_key_path_cannot_hold_is_rejected(tmp_path, name):
+    path = write(tmp_path, MINIMAL.replace('name = "puff"', f'name = "{name}"'))
+    with pytest.raises(RecipeError, match=r"emitter\[0\]\.name must be a name without"):
+        load_recipe(path)

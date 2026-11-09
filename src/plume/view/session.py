@@ -62,6 +62,7 @@ class Session:
         self.watch = RecipeWatch(chain_paths(recipe_path, chain))
         self.runs_started = 0
         self.compare: Snapshot | None = None  # B
+        self._file_broken = False  # the last reload could not read the file or its parents
         self._take_file(merged)
         self.edits: dict[str, Any] = _edits_from_sets(sets, merged)  # --set values start as edits (V14)
         recipe, self.base_recipe = self._resolve(self.edits)
@@ -98,7 +99,7 @@ class Session:
     def update(self, now_s: float | None = None) -> None:
         """Follows the files, then captures one frame of the run if it is still going."""
         if self.watch.changed(now_s):
-            self.reload()
+            self.reload(from_disk=True)
         self.advance()
 
     def advance(self) -> None:
@@ -116,20 +117,31 @@ class Session:
             run.cancel()
             self.error = f"recipe error: {error}"
 
-    def reload(self) -> bool:
-        """Reads the recipe again, with the unsaved edits on top; True when a new run started."""
+    def reload(self, from_disk: bool = False) -> bool:
+        """Reads the recipe again, with the unsaved edits on top; True when a new run started. `from_disk`
+        (the watch saw a change) notes edits kept over the file for a banner. The file is taken even when
+        the edits no longer fit it (an emitter they name was renamed), so Reset and Revert work against the
+        file as it is now."""
         try:
             merged, chain = resolve_extends(read_toml(self.recipe_path), self.recipe_path)
-            recipe, base = self._resolve(self.edits, merged)
         except RecipeError as error:
             self.error = f"recipe error: {error}"
+            self._file_broken = True
             self.watch.follow(reachable_chain(self.recipe_path))
             return False
-        self.error = None
+        self._file_broken = False
         self.watch.follow(chain_paths(self.recipe_path, chain))
         self._take_file(merged)
-        self.kept_edits_note = (f"{len(self.edits)} unsaved viewer edit{'s' if len(self.edits) != 1 else ''} "
-                                "kept over the reloaded recipe") if self.edits else None
+        if from_disk:
+            self.kept_edits_note = (f"{len(self.edits)} unsaved viewer edit{'s' if len(self.edits) != 1 else ''} "
+                                    "kept over the reloaded recipe") if self.edits else None
+        try:
+            recipe, base = self._resolve(self.edits)
+        except RecipeError as error:
+            edits = f" (with {len(self.edits)} unsaved viewer edits; Revert drops them)" if self.edits else ""
+            self.error = f"recipe error: {error}{edits}"
+            return False
+        self.error = None
         return self._apply(recipe, base) == RERUN
 
     def set_preview(self, preview: bool) -> None:
@@ -218,6 +230,8 @@ class Session:
         except RecipeError as error:
             return str(error)
         self.edits = edits
+        if not self._file_broken:
+            self.error = None  # the edits fit the file now (the reload's error was the edits')
         if self.kept_edits_note and not edits:
             self.kept_edits_note = None
         self._apply(recipe, base)
@@ -237,17 +251,17 @@ class Session:
         else:
             self.current = dataclasses.replace(current, recipe=recipe)
             return TAKE
-        if current.run.done or current.run.stopped:
-            self.compare = current  # A becomes B; while A is still simulating, B stays
+        if not current.run.capturing:
+            self.compare = current  # A becomes B; while A is still simulating or re-capturing, B stays
         if work == RERUN:
-            if current.run is not getattr(self.compare, "run", None):
-                current.run.cancel()  # a run nobody shows any more
             self.current = self._new_run(recipe)
         elif work == RECAPTURE:
             run = LiveRun.recapture(current.run, recipe)
             self.current = Snapshot(recipe, run, Viewport(recipe, run.derived, self.device))
         else:
             self.current = Snapshot(recipe, current.run, Viewport(recipe, current.run.derived, self.device))
+        if current.run not in (self.current.run, getattr(self.compare, "run", None)):
+            current.run.cancel()  # a run nobody shows any more
         return work
 
     def _new_run(self, recipe: Recipe) -> Snapshot:
@@ -274,9 +288,18 @@ def _edits_from_sets(sets: tuple[str, ...], merged: dict) -> dict[str, Any]:
             emitter = emitters[int(match.group(1))]
             if isinstance(emitter, dict) and isinstance(emitter.get("name"), str):
                 key = f"emitter.{emitter['name']}.{rest}"
-        edits.pop(key, None)  # a later --set of the same key wins, and goes last
-        edits[key] = value
+        for leaf, leaf_value in _leaves(key, value):
+            edits.pop(leaf, None)  # a later --set of the same key wins, and goes last
+            edits[leaf] = leaf_value
     return edits
+
+
+def _leaves(key: str, value: Any) -> list[tuple[str, Any]]:
+    """A table-valued --set (`forces.turbulence={ scale_m = 0.1 }`) as one edit per key, so the panel marks
+    each and Save keeps the file's own table layout."""
+    if not isinstance(value, dict):
+        return [(key, value)]
+    return [leaf for name, item in value.items() for leaf in _leaves(f"{key}.{name}", item)]
 
 
 def _toml_value(value: Any) -> Any:

@@ -153,3 +153,22 @@ def test_the_example_recipe_round_trips(tmp_path):
     assert len(text.splitlines()) == len(original.splitlines())
     recipe = load_recipe(path)
     assert recipe.render.opacity_per_density == 5.0 and recipe.emitter[0].velocity_mps == (0.0, 0.5, 0.0)
+
+
+def test_a_save_keeps_the_files_permissions_and_a_symlink(tmp_path):
+    target = tmp_path / "real.toml"
+    target.write_text(COMMENTED)
+    target.chmod(0o644)
+    link = tmp_path / "link.toml"
+    link.symlink_to(target)
+    save(link, {"seed": 4})
+    assert link.is_symlink() and load_recipe(target).seed == 4
+    assert target.stat().st_mode & 0o777 == 0o644
+
+
+def test_a_file_that_is_not_valid_toml_is_refused(tmp_path):
+    path = tmp_path / "r.toml"
+    path.write_text("seed = = 3\n")
+    with pytest.raises(RecipeError, match="is not valid TOML"):
+        write_edits(path, {"seed": 4}, {})
+    assert path.read_text() == "seed = = 3\n"

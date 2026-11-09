@@ -178,3 +178,49 @@ def test_a_re_run_leaves_the_cache_room_b_does_not_hold(cpu_device, tmp_path):
     session.edit("seed", 9)
     assert session.run.cache.budget_bytes == session.budget_bytes - held
     assert session.run.cache.shared_with_compare
+
+
+def test_a_second_render_edit_during_a_re_capture_keeps_b_and_cancels_the_first(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    finish(session)
+    first = session.run
+    session.edit("render.opacity_per_density", 8.0)
+    halfway = session.run
+    session.advance()
+    session.edit("render.soften_px", 1.0)
+    assert session.compare.run is first  # B is still the run that finished
+    assert halfway.stopped and session.run.source is first and session.runs_started == 1
+    finish(session)
+    assert session.run.assembled is not None
+
+
+def test_save_over_a_file_that_is_not_valid_toml_reports_and_keeps_the_edits(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    session.edit("forces.drag_per_s", 0.3)
+    (tmp_path / "child.toml").write_text("seed = = 3\n")
+    assert session.save().startswith("not saved: cannot save:")
+    assert session.edits == {"forces.drag_per_s": 0.3}
+    assert (tmp_path / "child.toml").read_text() == "seed = = 3\n"
+
+
+def test_a_reload_the_edits_no_longer_fit_still_takes_the_file_and_revert_recovers(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    session.edit("emitter.puff.radius_m", 0.25)
+    bump(tmp_path / "parent.toml", PARENT.replace('name = "puff"', 'name = "blob"').replace("frames = 4", "frames = 5"))
+    session.update(now_s=1e12)
+    assert "no emitter is named 'puff'" in session.error and "unsaved viewer edits" in session.error
+    assert session.revert() is None
+    assert session.error is None and session.recipe.time.frames == 5
+    assert session.recipe.emitter[0].name == "blob"
+
+
+def test_the_preview_toggle_does_not_claim_edits_were_kept_over_a_reload(cpu_device, tmp_path):
+    session = open_session(tmp_path)
+    session.edit("forces.drag_per_s", 0.3)
+    session.set_preview(True)
+    assert session.kept_edits_note is None
+
+
+def test_a_table_valued_set_becomes_one_edit_per_key(cpu_device, tmp_path):
+    session = open_session(tmp_path, sets=("forces.turbulence={ scale_m = 0.4, strength_mps2 = 0.1 }",))
+    assert session.edits == {"forces.turbulence.scale_m": 0.4, "forces.turbulence.strength_mps2": 0.1}
