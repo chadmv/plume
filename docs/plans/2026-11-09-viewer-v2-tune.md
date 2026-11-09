@@ -57,6 +57,10 @@ clips and stills.
   first; Save reports that it did.
 - **Read-only in the panel:** `extends`, emitter names (they are the emitters' identities), the ramps and
   background colors (V13), as V13 says.
+- **Emitter names must be plain** (added after review): key paths name emitters as `emitter.<name>.<key>`,
+  so `recipe/rules.py` rejects a name holding `.`, `[` or `]` (or an empty one).
+- **The panel lives in `view/panel.py`**, not `app.py` (section 6 lists no file for it), to keep the window
+  file to its job.
 - **tomlkit** (0.15.2, as section 7 says) joins the `view` extra in this slice, pinned in `uv.lock`.
 
 ## Tasks
