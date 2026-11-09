@@ -41,7 +41,7 @@ def capture_folder(out: str | None, output_name: str | None, sheet_folder: Path 
 def next_counter(folder: Path, name: str) -> int:
     """One past the largest counter of this name's stills and clips in `folder` (1 when there are none)."""
     pattern = re.compile(rf"{re.escape(name)}-(?:f\d+|{CLIP})-(\d+)\.png")
-    counters = [int(match.group(1)) for path in folder.glob(f"{name}-*.png")
+    counters = [int(match.group(1)) for path in folder.glob("*.png")
                 if (match := pattern.fullmatch(path.name))] if folder.is_dir() else []
     return max(counters, default=0) + 1
 

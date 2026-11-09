@@ -106,7 +106,7 @@ commit on CPU.
 - `cli/view.py`: a folder opens the sheet-only window (no device, no simulation); `--out` for `plume
   view`.
 - `view/sheet_app.py`: the sheet-only window: the card, navigation, transport, numbers strip, background.
-- Tests: the command refuses a folder with no sheet (exit 2) and opens one with the extra installed (the
+- Tests: the command refuses a folder with no sheet (exit 64, the usage error) and opens one with the extra installed (the
   window is not started in tests).
 
 ### TV3.6 - Clips and stills (window)

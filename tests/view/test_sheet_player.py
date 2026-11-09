@@ -130,3 +130,13 @@ def test_a_card_whose_rounded_edges_pass_its_own_draws(sheet_folder):
     nav.wheel(0.37)  # a card side of no whole number of pixels
     image = sheet_image(source, source.card(0, BACKGROUND), nav.view_camera(), BACKGROUND)
     assert image.shape == (157, 301, 4)
+
+
+def test_a_json_with_wrong_types_is_refused_not_a_crash(sheet_folder, tmp_path):
+    bad = tmp_path / "bad"
+    shutil.copytree(sheet_folder, bad)
+    info = json.loads((bad / "puff.json").read_text())
+    info["frames"] = None
+    (bad / "puff.json").write_text(json.dumps(info))
+    with pytest.raises(SheetFolderError, match="cannot read"):
+        SheetSource.from_folder(bad)

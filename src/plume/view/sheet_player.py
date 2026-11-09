@@ -72,9 +72,11 @@ class SheetSource:
                 raise SheetFolderError(f"{json_path} is not a sheet's JSON (no {', '.join(missing)})")
             with Image.open(json_path.with_suffix(".png")) as image:
                 pixels = np.asarray(image.convert("RGBA"))
-        except (OSError, ValueError) as error:
+            frames = cut_frames(pixels, int(info["frames"]), int(info["columns"]), int(info["frame_px"]))
+            fps, frame_m = float(info["fps"]), float(info["frame_m"])
+            seat = (float(info["seat"][0]), float(info["seat"][1]))
+        except (OSError, ValueError, TypeError, KeyError, IndexError) as error:
             raise SheetFolderError(f"cannot read the sheet {json_path.with_suffix('.png')}: {error}") from None
-        frames = cut_frames(pixels, int(info["frames"]), int(info["columns"]), int(info["frame_px"]))
         recipe, note, steps, base = _folder_recipe(folder)
         if recipe is not None and recipe.output.channels == info["channels"]:
             style = sheet_look(recipe)
@@ -82,8 +84,7 @@ class SheetSource:
             style = SheetLook(look=LookSettings(), channels=info["channels"], light_dir=RenderSettings().light_dir)
             if recipe is not None:
                 note = f"{SETTINGS_FILE} names another channel layout; drawn with the default look"
-        return cls(frames=frames, fps=float(info["fps"]), frame_m=float(info["frame_m"]),
-                   seat=(float(info["seat"][0]), float(info["seat"][1])), seat_world_m=np.zeros(3), style=style,
+        return cls(frames=frames, fps=fps, frame_m=frame_m, seat=seat, seat_world_m=np.zeros(3), style=style,
                    name=json_path.stem, recipe=recipe, steps_per_frame=steps, base_steps_per_frame=base,
                    look_note=note)
 

@@ -7,6 +7,7 @@ names them), the transport at the sheet's fps, the numbers strip measured from t
 stills and clips into the folder's `view/` (or `--out`'s).
 """
 
+import math
 import time
 from pathlib import Path
 
@@ -158,9 +159,16 @@ class SheetApp:
         if pressed(imgui.Key.home, False):
             self._home()
         if pressed(imgui.Key.f, False):
-            self.nav.frame(self.nav.domain_center, self.source.frame_m * 0.75)
+            self._frame_card()
         if pressed(imgui.Key.f12, False):
             self._save_still()
+
+    def _frame_card(self) -> None:
+        """F: the card's own center (not its seat) and a sphere around the card."""
+        (center_x, center_y), _ = card_home(self.source)
+        right, up, _ = self.nav.basis()
+        self.nav.frame(self.source.seat_world_m + right * center_x + up * center_y,
+                       self.source.frame_m * math.sqrt(0.5))
 
     def _home(self) -> None:
         """The card square on, at the sheet camera's angles when its recipe is known."""

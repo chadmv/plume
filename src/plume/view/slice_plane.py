@@ -137,7 +137,6 @@ def slice_kernel(view: ViewParams, info: GridInfo, axis: int, coordinate_m: floa
             image[py, px, channel] = to_byte(float(image[py, px, channel]) / 255.0 * DIM_VALUE)
 
 
-
 class SliceDrawer:
     """One viewport's slice: the prepared field of the drawn frame (kept while the frame and field stay)
     and the ramp table. Its scratch arrays are its own, apart from the viewport's."""

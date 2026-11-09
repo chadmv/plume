@@ -57,3 +57,9 @@ def test_the_toml_reloads_to_the_same_camera(tmp_path):
     assert again.pose() == nav.pose()
     camera, camera_again = nav.view_camera(), again.view_camera()
     assert np.allclose(camera.eye, camera_again.eye) and camera.pixel == pytest.approx(camera_again.pixel)
+
+
+def test_a_name_with_glob_characters_still_counts_up(tmp_path):
+    first = write_still(tmp_path, "fx[1]", 0, images(1)[0], {})
+    second = write_still(tmp_path, "fx[1]", 0, images(1)[0], {})
+    assert (first.name, second.name) == ("fx[1]-f000-001.png", "fx[1]-f000-002.png")

@@ -20,9 +20,9 @@ import numpy as np
 from imgui_bundle import hello_imgui, imgui
 
 from plume import tool_label
+from plume.recipe.schema import SHADE_LAYOUT
 from plume.recipe.serialize import recipe_table
 from plume.sheet.sheet_json import source_path
-from plume.recipe.schema import SHADE_LAYOUT
 from plume.view.camera_input import CameraInput
 from plume.view.capture import capture_folder, write_clip, write_still
 from plume.view.guides import (BOX, EMITTER, LIGHT, LIGHT_GRAB_PX, TICK, dashes, guide_segments,
@@ -84,7 +84,8 @@ class ViewerApp:
         self.drawn_half = False
         self.textures = Textures()
         self.slices = [None, None]  # each pane's SliceDrawer, made on first use (Warp arrays)
-        self.sheets: dict[int, SheetSource] = {}  # by run serial, for the runs on screen
+        self.slice_drawn = [False, False]  # whether each pane's last image holds a slice (its legend shows)
+        self.sheets: dict[tuple, SheetSource] = {}  # by (run serial, viewport serial): a look edit makes a new one
         self.cards: list = [None, None]  # each pane's (key, composited card)
         self.strip: tuple | None = None  # (key, StripData)
         self.capture_notice: str | None = None
@@ -143,8 +144,8 @@ class ViewerApp:
                 self.transport.restart()
         if session.compare is None:
             self.panel.showing_b = False
-        on_screen_runs = {snapshot.run.serial for snapshot in (session.current, session.compare) if snapshot}
-        self.sheets = {serial: sheet for serial, sheet in self.sheets.items() if serial in on_screen_runs}
+        on_screen = {_sheet_key(snapshot) for snapshot in (session.current, session.compare) if snapshot}
+        self.sheets = {key: sheet for key, sheet in self.sheets.items() if key in on_screen}
 
     def _kept(self) -> list[int]:
         """The frames the playhead steps over: the sheet's frames in the Sheet tab, else the kept frames."""
@@ -158,9 +159,10 @@ class ViewerApp:
         run = snapshot.run
         if run.assembled is None:
             return None
-        if run.serial not in self.sheets:
-            self.sheets[run.serial] = SheetSource.from_assembly(run.assembled, snapshot.recipe, run.derived.fps)
-        return self.sheets[run.serial]
+        key = _sheet_key(snapshot)
+        if key not in self.sheets:
+            self.sheets[key] = SheetSource.from_assembly(run.assembled, snapshot.recipe, run.derived.fps)
+        return self.sheets[key]
 
     # -- the bars -----------------------------------------------------------------------------------------
 
@@ -307,7 +309,7 @@ class ViewerApp:
                 self._draw_guides(draw_list, pane_origin, shown_camera, snapshot, light)
             if self.session.compare is not None:
                 self._draw_tag(draw_list, pane_origin, pane_width, "A" if snapshot is self.session.current else "B")
-            if pane == len(shown) - 1 and self._slice_on():
+            if self._slice_on() and self.slice_drawn[pane]:
                 self._draw_legend(draw_list, pane_origin, pane_width, height, pane)
             draw_list.pop_clip_rect()
         draw_list.push_clip_rect(origin, imgui.ImVec2(origin.x + width, origin.y + height), True)
@@ -357,16 +359,19 @@ class ViewerApp:
         background = background_hex(snapshot.recipe.look, self.background_index)
         if self.tab == SHEET:
             sheet = self._sheet(snapshot)
-            key = (snapshot.run.serial, frame, background)
+            key = (_sheet_key(snapshot), frame, background)
             if self.cards[pane] is None or self.cards[pane][0] != key:
                 self.cards[pane] = (key, sheet.card(frame, background))
             return sheet_image(sheet, self.cards[pane][1], camera, background)
         overlay = None
+        self.slice_drawn[pane] = False
         if self._slice_on():
             if self.slices[pane] is None:
                 self.slices[pane] = SliceDrawer(self.session.device)
             drawer = self.slices[pane]
             if drawer.prepare(snapshot.run, frame, self.plane.field_name):
+                self.slice_drawn[pane] = True
+
                 def overlay(image, drawn_camera):
                     drawer.overlay(image, drawn_camera, snapshot.run, self.plane)
         return snapshot.viewport.draw(snapshot.run, frame, camera, self.view, background, overlay)
@@ -538,7 +543,7 @@ class ViewerApp:
                                    imgui.ImVec2(origin.x + end[0], origin.y + end[1]), color, 1.5)
 
     def _draw_legend(self, draw_list, origin, width: int, height: int, pane: int) -> None:
-        """The slice's field, range and ramp in the pane's bottom right."""
+        """The slice's field, range and ramp in the pane's bottom right (each pane its own range)."""
         drawer = self.slices[pane]
         if drawer is None:
             return
@@ -623,3 +628,9 @@ class ViewerApp:
     def _before_exit(self) -> None:
         self.textures.delete()
         stop_plotting()
+
+
+def _sheet_key(snapshot: Snapshot) -> tuple:
+    """What a Sheet tab card depends on: the run's frames and the recipe's look (a look edit makes a new
+    viewport over the same run)."""
+    return snapshot.run.serial, snapshot.viewport.serial
