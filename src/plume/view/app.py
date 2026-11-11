@@ -115,6 +115,9 @@ class ViewerApp:
         run = self.session.run
         self.transport.advance(dt, self._kept(), self.session.derived.fps,
                                live=self.tab == VOLUME and not (run.done or run.stopped))
+        # Tab belongs to the viewer (Volume or Sheet), so no widget is a Tab stop: ImGui's own Tab focus
+        # cycling, which runs even without keyboard navigation, would move focus into the panel's fields.
+        imgui.push_item_flag(imgui.ItemFlags_.no_tab_stop, True)
         self._top_bar()
         available = imgui.get_content_region_avail()
         imgui.begin_child("view_area", imgui.ImVec2(max(available.x - PANEL_PX, 8), 0))
@@ -125,6 +128,7 @@ class ViewerApp:
         imgui.begin_child("panel", imgui.ImVec2(0, 0), imgui.ChildFlags_.borders)
         self.panel.draw()
         imgui.end_child()
+        imgui.pop_item_flag()
 
     def _follow_run(self) -> None:
         session = self.session
