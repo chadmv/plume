@@ -58,7 +58,7 @@ def _view(args: argparse.Namespace) -> int:
 
     try:
         run_view(Path(args.recipe), preview=args.preview, device=args.device, sets=tuple(args.set),
-                 cache_gb=args.cache_gb)
+                 cache_gb=args.cache_gb, out=args.out)
     except ViewUsageError as error:
         print(f"plume view: error: {error}", file=sys.stderr)
         return EXIT_USAGE
@@ -85,13 +85,16 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--out", help="output folder; default out/<name>/")
     _add_set_argument(run)
 
-    view = commands.add_parser("view", help="open the live viewer window on a recipe (needs the view extra)")
-    view.add_argument("recipe", help="path to the recipe TOML")
+    view = commands.add_parser("view", help="open the live viewer window on a recipe or a sheet folder (needs the "
+                                            "view extra)")
+    view.add_argument("recipe", help="path to the recipe TOML, or a folder holding a sheet (plume run's output)")
     view.add_argument("--preview", action="store_true", help="run the preview grid instead of the full grid")
     _add_device_argument(view)
     view.add_argument("--cache-gb", type=_positive_float, default=4.0,
                       help="device memory for the kept frames; a run that does not fit keeps every second "
                            "(then fourth) frame")
+    view.add_argument("--out", help="folder whose view/ gets stills and clips; default out/<name>/ (a sheet "
+                                    "folder: the folder itself)")
     _add_set_argument(view)
     return parser
 

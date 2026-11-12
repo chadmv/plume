@@ -6,9 +6,27 @@ from plume.cli.main import EXIT_FAILED, EXIT_RECIPE_ERROR, EXIT_USAGE, main
 from support.tiny import TINY
 
 
-def test_view_refuses_a_folder_until_the_sheet_tab_exists(tmp_path, capsys):
+def test_view_refuses_a_folder_without_a_sheet(tmp_path, capsys):
     assert main(["view", str(tmp_path)]) == EXIT_USAGE
-    assert "Sheet tab" in capsys.readouterr().err
+    assert "holds no sheet" in capsys.readouterr().err
+
+
+def test_view_of_a_sheet_folder_takes_no_recipe_options(tmp_path, capsys):
+    assert main(["view", str(tmp_path), "--preview"]) == EXIT_USAGE
+    assert "a sheet folder is shown as it is" in capsys.readouterr().err
+
+
+def test_view_opens_a_sheet_folder_without_a_device(tmp_path, monkeypatch):
+    import plume.view.sheet_app as sheet_app
+
+    recipe = tmp_path / "puff.toml"
+    recipe.write_text(TINY)
+    assert main(["run", str(recipe), "--device", "cpu", "--out", str(tmp_path / "out")]) == 0
+    opened = []
+    monkeypatch.setattr(sheet_app, "run_sheet_viewer", lambda folder, source, out: opened.append((folder, source, out)))
+    assert main(["view", str(tmp_path / "out"), "--out", str(tmp_path / "clips")]) == 0
+    folder, source, out = opened[0]
+    assert folder == tmp_path / "out" and source.name == "puff" and out == str(tmp_path / "clips")
 
 
 def test_view_without_the_extra_names_the_install_command(tmp_path, capsys, monkeypatch):

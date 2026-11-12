@@ -69,11 +69,10 @@ def slab_range(origin: wp.vec3, direction: wp.vec3, box_min: wp.vec3, box_max: w
     return wp.vec2(t_enter, t_exit)
 
 
-@wp.kernel
-def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtype=float),
-                    gradient: wp.array3d(dtype=wp.vec3), light: wp.array3d(dtype=float), info: GridInfo,
-                    view: ViewParams, look: LookParams, image: wp.array3d(dtype=float)):
-    py, px = wp.tid()
+@wp.func
+def pixel_ray(view: ViewParams, px: int, py: int):
+    """The ray through a pixel's center: its origin and unit direction (the slice plane casts the same
+    rays as the march)."""
     plane_x = view.left_m + (float(px) + 0.5) * view.pixel_m
     plane_y = view.top_m - (float(py) + 0.5) * view.pixel_m
     origin = view.right * plane_x + view.up * plane_y + view.toward * FAR_M
@@ -81,6 +80,15 @@ def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtyp
     if view.perspective == 1:
         origin = view.eye
         direction = wp.normalize(view.right * plane_x + view.up * plane_y - view.toward)
+    return origin, direction
+
+
+@wp.kernel
+def raymarch_kernel(smoke: wp.array3d(dtype=float), temperature: wp.array3d(dtype=float),
+                    gradient: wp.array3d(dtype=wp.vec3), light: wp.array3d(dtype=float), info: GridInfo,
+                    view: ViewParams, look: LookParams, image: wp.array3d(dtype=float)):
+    py, px = wp.tid()
+    origin, direction = pixel_ray(view, px, py)
     box_max = info.origin_m + wp.vec3(float(info.dims[0]), float(info.dims[1]), float(info.dims[2])) * info.cell_m
     span = slab_range(origin, direction, info.origin_m, box_max)
     if view.perspective == 1:

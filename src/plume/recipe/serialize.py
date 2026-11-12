@@ -17,7 +17,7 @@ def recipe_to_toml(recipe: Recipe, derived: Derived, device: str, origin: Recipe
     `origin` records the parents and `--set` overrides already merged in; `run_facts` adds values only a
     run knows, such as the steps the CFL cap chose.
     """
-    table = _plain(dataclasses.asdict(recipe))
+    table = recipe_table(recipe)
     table["resolved"] = {
         "cells": list(derived.cells),
         "size_m": list(derived.size_m),
@@ -30,6 +30,11 @@ def recipe_to_toml(recipe: Recipe, derived: Derived, device: str, origin: Recipe
         **(run_facts or {}),
     }
     return tomli_w.dumps(table)
+
+
+def recipe_table(recipe: Recipe) -> dict:
+    """The resolved recipe as a plain TOML table (lists for vectors), every value explicit."""
+    return _plain(dataclasses.asdict(recipe))
 
 
 def _plain(value: Any) -> Any:

@@ -13,7 +13,10 @@ source: user request, 2026-11-07
 **Slice V1 Watch built 2026-11-08:** plan `docs/plans/2026-11-08-viewer-v1-watch.md`; `plume view RECIPE`
 watches a run live from any angle and re-runs on save. **Slice V2 Tune built 2026-11-09:** plan
 `docs/plans/2026-11-09-viewer-v2-tune.md`; stages on every recipe table, the editing panel, Save with tomlkit,
-Compare and Split, the light arrow drag. V3 Inspect remains; the item stays open until it ships.
+Compare and Split, the light arrow drag. **Slice V3 Inspect built 2026-11-09:** plan
+`docs/plans/2026-11-09-viewer-v3-inspect.md`; the Sheet tab and `plume view OUT_DIR`, the numbers strip, the
+slice plane (velocity in the frame cache), clips and stills. The item closes once the user has judged a sheet
+in the Sheet tab and a thread has read back a clip the user saved (spec section 10).
 
 **Designed 2026-11-08:** `docs/specs/2026-11-08-live-viewer-design.md` (decisions V1 to V18, amendment A5),
 built in three slices, V1 Watch, V2 Tune and V3 Inspect (its section 10). The user's reason (2026-11-08): "it

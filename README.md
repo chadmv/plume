@@ -66,6 +66,7 @@ then loops the run so it can be judged in motion from any angle. It is an option
 uv sync --extra view
 uv run plume view recipes/smoke_puff.toml            # the full grid; --preview runs the preview grid
 uv run plume view recipes/smoke_puff.toml --set forces.drag_per_s=0.4
+uv run plume view out/smoke_puff/                    # a finished sheet on its card; no GPU needed
 ```
 
 The view is drawn by the sheet's own ray march with the contact sheets' look, so it shows what the sheet
@@ -88,6 +89,25 @@ slider) leaves B where it was, so B stays the look before the first nudge; chang
 **Hold B** keeps B where it is through every change until you turn it off. `C` (or Compare) flips the view to B at the same frame
 and camera; Split shows A and B side by side; the panel lists the keys that differ.
 
+**Inspect.** `Tab` switches between **Volume** (the simulated fields from the camera) and **Sheet** (the
+assembled flipbook on a card facing the camera, the contact sheets' look over the background, stepping whole
+frames at the sheet's fps; at Home the card sits where the volume's smoke is). `plume view OUT_DIR` opens a
+folder holding a sheet (`plume run`'s output) in the Sheet tab alone, with its `settings.toml`'s look. The
+**numbers strip** under the view plots coverage, mean thickness and peak heat per frame (the numbers
+`numbers.txt` holds, once the sheet is assembled), marks frames whose smoke reaches an open face or the
+ceiling and frames the step cap split, and its white playhead line can be dragged. The **slice plane** (`L`:
+off, x, y, z) colors smoke, temperature, speed or swirl on a plane through the domain; drag it along its axis
+with the left mouse. Speed and swirl need the frames' velocity, which the frame cache drops first when
+`--cache-gb` is short.
+
+**Stills and clips.** `F12` (or Still) saves the current frame as a PNG; **Save clip** saves every frame
+playing as an animated PNG at the sheet's fps. Both draw the current tab, view, camera, background, slice
+and A, B or Split again at full size, without guides or text, into `out/<name>/view/` (or `--out DIR`'s
+`view/`; for a sheet folder, the folder's `view/`), named `<name>-f<frame>-<n>.png` and
+`<name>-clip-<n>.png`. The `.toml` beside each says exactly what was shown: the tab, view, background,
+frame, slice, camera pose and the resolved recipe. A thread reads a clip's frames with Pillow
+(`Image.open(path)`, then `seek(i)` for each frame).
+
 | Input | Does |
 |---|---|
 | Alt + left drag | Tumble around the pivot |
@@ -104,10 +124,13 @@ and camera; Split shows A and B side by side; the panel lists the keys that diff
 | Space, `,` `.`, Shift+`,` Shift+`.` | Play or pause; step a frame; first or last frame |
 | Left drag on the light arrow's tip | Turn the key light (`render.light_dir`) |
 | C | Compare: show B, the run before the last change |
+| Tab | Volume or Sheet |
+| L, left drag | Slice plane off, x, y, z; move it along its axis |
+| F12 | Save a still |
 | Ctrl+S | Save the panel's edits into the recipe |
 
-`--cache-gb` (default 4) bounds the device memory the kept frames take; a run that does not fit keeps
-every second (or fourth) frame and says so. The corner shows the redraw time and the run's time.
+`--cache-gb` (default 4) bounds the device memory the kept frames take; a run that does not fit drops the
+frames' velocity first, then keeps every second (or fourth) frame, and says so. The corner shows the redraw time and the run's time.
 
 ### Godot import settings
 
